@@ -10,7 +10,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  *
  * @author tchap
  */
-public class FileStore implements ModelStore {
+public class FileStore implements GraphStore {
 
     
     

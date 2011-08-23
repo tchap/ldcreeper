@@ -10,7 +10,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  *
  * @author tchap
  */
-public class JosekiStore implements ModelStore {
+public class JosekiStore implements GraphStore {
 
     @Override
     public void saveModel(Model model, String name) {

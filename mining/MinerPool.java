@@ -10,12 +10,12 @@ import ldcreeper.scheduling.URIServer;
  *
  * @author tchap
  */
-public class URIMinerPool {
+public class MinerPool {
     
     private URIServer server = null;
     private URIMiner[] miners;
     
-    URIMinerPool(int miner_count) {
+    MinerPool(int miner_count) {
         miners = new URIMiner[miner_count];
         
         for (int i = 0; i < miners.length; ++i) {

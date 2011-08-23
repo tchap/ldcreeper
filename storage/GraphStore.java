@@ -10,7 +10,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  *
  * @author tchap
  */
-public interface ModelStore {
+public interface GraphStore {
     public void saveModel(Model model, String name);
     public Model loadModel(String name);
 }
