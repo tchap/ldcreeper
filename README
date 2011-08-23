@@ -1,1 +1,7 @@
-contact: ondra.cap@gmail.com
+Contact: ondra dot cap at gmail dot com
+
+LDCreeper is built on top of Jena framework for Semantic Web applications.
+Jena is not distributed along with LDCreeper, you have to link it yourself.
+For more informations about Jena and its licensing see http://openjena.org/ .
+
+Tested with Jena 2.6.4
