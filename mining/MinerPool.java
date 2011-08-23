@@ -30,25 +30,36 @@ public class MinerPool {
     
     private final URIServer server;
     private final Pipeline pipeline;
-    private URIMiner[] miners;
+    private Miner[] miners;
     private int sleeping_miners;
     
-    MinerPool(URIServer server, Pipeline pipeline, int miner_count) {
+    public MinerPool(URIServer server, Pipeline pipeline, int miner_count) {
         this.pipeline = pipeline;
         this.server = server;
-        miners = new URIMiner[miner_count];
+        miners = new Miner[miner_count];
         sleeping_miners = 0;
         
         for (int i = 0; i < miners.length; ++i) {
-            miners[i] = new URIMiner(i+1);
+            miners[i] = new Miner(i+1);
         }
     }
     
     public void start() {
         assert(server != null);
             
-        for (URIMiner miner : miners) {
+        for (Miner miner : miners) {
             miner.start();
+        }
+    }
+    
+    public void join() {
+        for (Miner miner : miners) {
+            
+            try {
+                miner.join();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(MinerPool.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
@@ -57,16 +68,16 @@ public class MinerPool {
     }
     
     private void interruptMiners() {
-        for (URIMiner miner : miners) {
+        for (Miner miner : miners) {
             miner.interrupt();
         }
     }
     
-    class URIMiner extends Thread {
+    class Miner extends Thread {
         
         private String tid;
         
-        URIMiner(int tid) {
+        Miner(int tid) {
             this.tid = Integer.toString(tid);
         }
         

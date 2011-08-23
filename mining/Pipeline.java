@@ -30,9 +30,9 @@ import ldcreeper.storage.GraphStorage;
  */
 abstract public class Pipeline implements Runnable, Cloneable {
     
-    private URIContext uri;
-    private URIServer server;
-    private GraphStorage storage;
+    protected URIContext uri;
+    protected URIServer server;
+    protected GraphStorage storage;
 
     public Pipeline(URIServer server, GraphStorage storage) {
         this.server = server;
@@ -47,7 +47,11 @@ abstract public class Pipeline implements Runnable, Cloneable {
     public void run() {
         assert uri != null;
         
-        store(filter(discover(fetch())));
+        try {
+            store(filter(discover(fetch())));
+        } catch (Exception ex) {
+            Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override
@@ -62,8 +66,8 @@ abstract public class Pipeline implements Runnable, Cloneable {
         }
     }
     
-    abstract Model fetch();
-    abstract Model discover(Model model);
-    abstract Model filter(Model model);
-    abstract void store(Model model);
+    abstract Model fetch() throws Exception;
+    abstract Model discover(Model model) throws Exception;
+    abstract Model filter(Model model) throws Exception;
+    abstract void store(Model model) throws Exception;
 }
