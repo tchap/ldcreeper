@@ -10,18 +10,16 @@ import com.hp.hpl.jena.rdf.model.Model;
  *
  * @author tchap
  */
-public class FileStore implements GraphStore {
+public class TDBStorage implements GraphStorage {
 
-    
-    
     @Override
     public void saveModel(Model model, String name) {
-        
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Model loadModel(String name) {
-        throw new UnsupportedOperationException("Not supported.");
+        throw new UnsupportedOperationException("Not supported yet.");
     }
     
 }
