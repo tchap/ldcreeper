@@ -15,7 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.storage;
+package ldcreeper.model.store;
+
 
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -24,7 +25,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public interface GraphStorage {
-    public void saveGraph(Graph graph);
-    public void saveModel(Model model);
+public interface NamedModelStore extends ModelStore {
+    public void storeNamedGraph(Graph graph, String name);
+    public void storeNamedModel(Model model, String name);
 }

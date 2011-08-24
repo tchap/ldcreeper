@@ -15,16 +15,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.storage;
+package ldcreeper.model.extract;
 
-import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
 
 /**
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public interface NamedGraphStorage extends GraphStorage {
-    public void saveNamedGraph(Graph graph, String name);
-    public void saveNamedModel(Model model, String name);
+public interface URIExtractor {
+    public void extractFromModel(Model model, int depth);
 }

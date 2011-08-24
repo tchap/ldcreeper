@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.storage;
+package ldcreeper.model.store;
 
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -25,16 +25,16 @@ import com.hp.hpl.jena.tdb.TDBFactory;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public class TDBStorage implements NamedGraphStorage {
+public class TDBModelStore implements NamedModelStore {
     
     private String directory;
     
-    public TDBStorage(String directory) {
+    public TDBModelStore(String directory) {
         this.directory = directory + "main";
     }
     
     @Override
-    public void saveNamedGraph(Graph graph, String name) {
+    public void storeNamedGraph(Graph graph, String name) {
         /*
          * TODO: Implement saveNamedGraph()
          */
@@ -42,13 +42,13 @@ public class TDBStorage implements NamedGraphStorage {
     }
 
     @Override
-    public synchronized void saveNamedModel(Model model, String name) {
+    public synchronized void storeNamedModel(Model model, String name) {
         Model tdb_model = TDBFactory.createNamedModel(name, directory);
         tdb_model.add(model).close();
     }
 
     @Override
-    public void saveGraph(Graph graph) {
+    public void storeGraph(Graph graph) {
         /*
          * TODO: Implement saveGraph()
          */
@@ -56,7 +56,7 @@ public class TDBStorage implements NamedGraphStorage {
     }
 
     @Override
-    public synchronized void saveModel(Model model) {
+    public synchronized void storeModel(Model model) {
         Model tdb_model = TDBFactory.createModel(directory);
         tdb_model.add(model).close();
     }

@@ -107,7 +107,15 @@ public class MinerPool {
                     }
                 }
                 
-                Pipeline pipe_clone = pipeline.clone();
+                Pipeline pipe_clone;
+                
+                try {
+                    pipe_clone = pipeline.clone();
+                } catch (CloneNotSupportedException ex) {
+                    Logger.getLogger(MinerPool.class.getName()).log(Level.SEVERE, null, ex);
+                    return;
+                }
+                
                 pipe_clone.setURIContext(uri);
                 
                 pipe_clone.run();

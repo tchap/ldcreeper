@@ -20,54 +20,55 @@ package ldcreeper.mining;
 import com.hp.hpl.jena.rdf.model.Model;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import ldcreeper.model.create.ModelCreator;
+import ldcreeper.model.extract.URIExtractor;
+import ldcreeper.model.filter.ModelFilter;
 import ldcreeper.scheduling.URIContext;
-import ldcreeper.scheduling.URIServer;
-import ldcreeper.storage.GraphStorage;
+import ldcreeper.model.store.NamedModelStore;
 
 /**
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-abstract public class Pipeline implements Runnable, Cloneable {
+public class Pipeline implements Runnable, Cloneable {
     
-    protected URIContext uri;
-    protected URIServer server;
-    protected GraphStorage storage;
+    private ModelCreator creator;
+    private URIExtractor extractor;
+    private ModelFilter filter;
+    private NamedModelStore store;
+    
+    protected URIContext uric;
 
-    public Pipeline(URIServer server, GraphStorage storage) {
-        this.server = server;
-        this.storage = storage;
+    public Pipeline(ModelCreator creator, URIExtractor extractor, ModelFilter filter, NamedModelStore store) {
+        this.creator = creator;
+        this.extractor = extractor;
+        this.filter = filter;
+        this.store = store;
     }
     
-    public void setURIContext(URIContext uri) {
-        this.uri = uri;
+    public void setURIContext(URIContext uric) {
+        this.uric = uric;
     }
     
     @Override
     public void run() {
-        assert uri != null;
-        
-        try {
-            store(filter(discover(fetch())));
-        } catch (Exception ex) {
-            Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
+        if (uric == null) {
+            throw new NullPointerException("URI Context not set");
         }
+        
+        Model model = creator.createFromURI(uric.getURI());
+        
+        extractor.extractFromModel(model, uric.getDepth());
+        
+        model = filter.filterModel(model);
+        
+        store.storeNamedModel(model, uric.getURI().toString());
     }
 
     @Override
-    protected Pipeline clone() {
-        try {
-            Pipeline pipeline = (Pipeline) super.clone();
-            pipeline.setURIContext(null);
-            return pipeline;
-        } catch (CloneNotSupportedException ex) {
-            Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
-            return null;
-        }
+    protected Pipeline clone() throws CloneNotSupportedException {
+        Pipeline pipeline = (Pipeline) super.clone();
+        pipeline.setURIContext(null);
+        return pipeline;
     }
-    
-    abstract Model fetch() throws Exception;
-    abstract Model discover(Model model) throws Exception;
-    abstract Model filter(Model model) throws Exception;
-    abstract void store(Model model) throws Exception;
 }
