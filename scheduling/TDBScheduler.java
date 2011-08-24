@@ -32,13 +32,14 @@ import java.net.URI;
 public class TDBScheduler implements URIServer {
     
     private URIServer server;
+    private String directory;
     
-    private static final String TDB_directory = "TDB/scheduling";
     private static final String property_name = "scheduling_state";
     private static final String property_value = "visited";
 
-    public TDBScheduler(URIServer server) {
+    public TDBScheduler(URIServer server, String directory) {
         this.server = server;
+        this.directory = directory + "scheduling";
     }
 
     @Override
@@ -60,7 +61,7 @@ public class TDBScheduler implements URIServer {
         /*
          * TODO: Rewrite visited() to use standard predicate
          */
-        Model model = TDBFactory.createModel(TDB_directory);
+        Model model = TDBFactory.createModel(directory);
         
         Resource uri = model.createResource(u.toString());
         Property state = model.createProperty(property_name);
