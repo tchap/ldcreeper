@@ -24,7 +24,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public interface GraphStorage {
-    public void saveGraph(Graph graph);
-    public void saveModel(Model model);
+public interface NamedGraphStorage extends GraphStorage {
+    public void saveNamedGraph(Graph graph, String name);
+    public void saveNamedModel(Model model, String name);
 }
