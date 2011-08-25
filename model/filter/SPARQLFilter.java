@@ -17,31 +17,31 @@
  */
 package ldcreeper.model.filter;
 
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 
 /**
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public abstract class ModelFilter {
-    
-    private ModelFilter next_filter;
+public class SPARQLFilter extends ModelFilter {
 
-    public ModelFilter(ModelFilter next_filter) {
-        this.next_filter = next_filter;
+    private Query query;
+
+    public SPARQLFilter(String query, ModelFilter next_filter) {
+        super(next_filter);
+        this.query = QueryFactory.create(query);
     }
     
-    public Model filterModel(Model model) {
-        Model filtered = filter(model);
+    @Override
+    protected Model filter(Model model) {
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        Model filtered = qexec.execConstruct();
         
-        if (next_filter != null) {
-            return next_filter.filterModel(filtered);
-        }
-        else {
-            return filtered;
-        }
+        return filtered;
     }
-    
-    abstract protected Model filter(Model model);
     
 }
