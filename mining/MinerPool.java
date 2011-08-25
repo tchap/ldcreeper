@@ -34,7 +34,7 @@ public class MinerPool {
     private int sleeping_miners;
     
     public MinerPool(URIServer server, Pipeline pipeline, int miner_count) {
-        Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Creating MinerPool of {0} miners", Integer.toString(miner_count));
+        System.err.println("Creating MinerPool of " + Integer.toString(miner_count) + " miners");
         
         this.pipeline = pipeline;
         this.server = server;
@@ -47,7 +47,7 @@ public class MinerPool {
     }
     
     public void start() {
-        Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Starting miners");
+        System.err.println("Starting miners");
             
         for (Miner miner : miners) {
             miner.start();
@@ -56,7 +56,7 @@ public class MinerPool {
     }
     
     public void join() {
-        Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Joining miners");
+        System.err.println("Joining miners");
         
         for (Miner miner : miners) {
             
@@ -73,7 +73,7 @@ public class MinerPool {
     }
     
     private void interruptMiners() {
-        Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Interrupting miners");
+        System.err.println("Interrupting miners");
         
         for (Miner miner : miners) {
             miner.interrupt();
@@ -85,7 +85,6 @@ public class MinerPool {
         private String tid;
         
         Miner(int tid) {
-            Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Creating miner {0}", tid);
             this.tid = Integer.toString(tid);
         }
         
@@ -99,19 +98,19 @@ public class MinerPool {
                     if ((uri = server.requestURI()) == null) {
                         if (isLastWorker()) {
                             interruptMiners();
-                            Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Miner {0} exiting", tid);
+                            System.err.println("Miner " + tid + " exiting");
                             return;
                         }
 
                         try {
-                            Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Miner {0} waiting", tid);
+                            System.err.println("Miner " + tid + " waiting");
                             sleeping_miners += 1;
                             server.getLock().wait();
                             sleeping_miners -= 1;
-                            Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Miner {0} woken up");
+                            System.err.println("Miner " + tid + " woken up");
                             continue;
                         } catch (InterruptedException ex) {
-                            Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Miner {0} exiting", tid);
+                            System.err.println("Miner " + tid + " exiting");
                             return;
                         }
                     }
@@ -128,7 +127,7 @@ public class MinerPool {
                 
                 pipe_clone.setURIContext(uri);
                 
-                Logger.getLogger(MinerPool.class.getName()).log(Level.INFO, "Miner {0} processing uri", tid);
+                System.err.println("Miner " + tid + " processing URI");
                 
                 pipe_clone.run();
             }

@@ -93,10 +93,12 @@ public class LDCreeper {
         URIServer queue = new SimpleURIQueue(null);
         URIServer scheduler = new TDBScheduler(tdb_path, queue);
         
+        URIServer server = queue;
+        
         ModelCreator creator = new ContentTypeModelCreator();
         
-        URIExtractor friend_extractor = new SPARQLExtractor(scheduler, friend_select, null);
-        URIExtractor sameas_extractor = new SPARQLExtractor(scheduler, sameas_select, friend_extractor);
+        URIExtractor friend_extractor = new SPARQLExtractor(server, friend_select, null);
+        URIExtractor sameas_extractor = new SPARQLExtractor(server, sameas_select, friend_extractor);
         
         ModelFilter filter = new SPARQLFilter(friend_construct, null);
         
@@ -104,7 +106,7 @@ public class LDCreeper {
         
         Pipeline pipeline = new Pipeline(creator, sameas_extractor, filter, store);
         
-        MinerPool miners = new MinerPool(scheduler, pipeline, 5);
+        MinerPool miners = new MinerPool(server, pipeline, 5);
         
        
         URI starting_uri = null;
@@ -118,7 +120,7 @@ public class LDCreeper {
         
         URIContext starting_context = new URIContext(starting_uri, 0);
         
-        scheduler.proposeURI(starting_context);
+        server.proposeURI(starting_context);
         
         
         miners.start();

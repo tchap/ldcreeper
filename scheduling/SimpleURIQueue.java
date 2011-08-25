@@ -18,6 +18,8 @@
 package ldcreeper.scheduling;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -36,6 +38,8 @@ public class SimpleURIQueue extends URIServer {
     
     @Override
     protected boolean propose(URIContext uri) {
+        System.err.println("URI proposed: " + uri.getURI().toString());
+        
          if (queue.offer(uri)) {
              synchronized (queue_lock) {
                 queue_lock.notify();
