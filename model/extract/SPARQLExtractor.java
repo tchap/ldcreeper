@@ -21,12 +21,14 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
+import com.hp.hpl.jena.sparql.core.Var;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.NoSuchElementException;
+import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import ldcreeper.scheduling.URIContext;
 import ldcreeper.scheduling.URIServer;
 
@@ -34,42 +36,44 @@ import ldcreeper.scheduling.URIServer;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public class SPARQLExtractor implements URIExtractor {
+public class SPARQLExtractor extends URIExtractor {
 
     private URIServer server;
     private Query query;
-    
-    public SPARQLExtractor(URIServer server, String ask_query) {
-        query = QueryFactory.create(ask_query);
+
+    public SPARQLExtractor(URIServer server, String query, URIExtractor extractor) {
+        super(extractor);
+        this.server = server;
+        this.query = QueryFactory.create(query);
     }
 
     @Override
-    public void extractFromModel(Model model, int depth) {
+    public void extractFrom(Model model, int depth) {
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
-        Model result = qexec.execConstruct();
-        qexec.close();
+        ResultSet result = qexec.execSelect();
         
-        Statement stat;
-        StmtIterator iter = result.listStatements();
-        
-        try {
-            while (true) {
-                stat = iter.nextStatement();
+        while (result.hasNext()) {
+            Iterator<Var> vars = result.nextBinding().vars();
+            
+            while (vars.hasNext()) {
+                Var var = vars.next();
                 
-                if (stat.getObject().isURIResource()) {
-                    URI uri;
-                    
+                if (var.isURI()) {
+                    URIContext uric;
+                            
                     try {
-                        uri = new URI(stat.getObject().toString());
+                         uric = new URIContext(new URI(var.getURI()), depth);
                     } catch (URISyntaxException ex) {
+                        Logger.getLogger(SPARQLExtractor.class.getName()).log(Level.INFO, null, ex);
                         continue;
                     }
                     
-                    URIContext uric = new URIContext(uri, depth);
                     server.proposeURI(uric);
                 }
-            }
-        } catch (NoSuchElementException ex) {}
+            }        
+        }
+        
+        qexec.close();
     }
     
 }

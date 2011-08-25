@@ -23,6 +23,22 @@ import com.hp.hpl.jena.rdf.model.Model;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public interface URIExtractor {
-    public void extractFromModel(Model model, int depth);
+public abstract class URIExtractor {
+    
+    private URIExtractor next_extractor;
+
+    public URIExtractor(URIExtractor next_extractor) {
+        this.next_extractor = next_extractor;
+    }
+    
+    public void extractFromModel(Model model, int depth) {
+        extractFrom(model, depth);
+        
+        if (next_extractor != null) {
+            next_extractor.extractFromModel(model, depth);
+        }
+    }
+    
+    abstract protected void extractFrom(Model model, int depth);
+      
 }
