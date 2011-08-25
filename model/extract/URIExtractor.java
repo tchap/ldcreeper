@@ -25,7 +25,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  */
 public abstract class URIExtractor {
     
-    private URIExtractor next_extractor;
+    private final URIExtractor next_extractor;
 
     public URIExtractor(URIExtractor next_extractor) {
         this.next_extractor = next_extractor;

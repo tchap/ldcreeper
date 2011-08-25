@@ -22,6 +22,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import ldcreeper.mining.MinerPool;
+import ldcreeper.mining.Pipeline;
+import ldcreeper.model.create.ContentTypeModelCreator;
+import ldcreeper.model.create.ModelCreator;
+import ldcreeper.model.extract.SPARQLExtractor;
+import ldcreeper.model.extract.URIExtractor;
+import ldcreeper.model.filter.ModelFilter;
+import ldcreeper.model.filter.SPARQLFilter;
+import ldcreeper.model.store.NamedModelStore;
+import ldcreeper.model.store.TDBModelStore;
 import ldcreeper.scheduling.SimpleURIQueue;
 import ldcreeper.scheduling.TDBScheduler;
 import ldcreeper.scheduling.URIContext;
@@ -43,19 +53,59 @@ public class LDCreeper {
         String query_path = "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/query/";
         
         /*
-         * TODO: Read query file into variable
+         * TODO: Write query
          */
         /*
-         * TODO: Rewrite query to use CONSTRUCT
+         * TODO: Read query from file
          */
-        String discovery_string = "";
+        String friend_select = 
+                "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
+                "SELECT DISTINCT ?friend " +
+                "WHERE { " + 
+                "?person a foaf:Person ; " +
+                "        foaf:knows ?friend ." +
+                "}"
+                ;
         
-        URIServer queue = new SimpleURIQueue();
-        URIServer scheduler = new TDBScheduler(queue, tdb_path);
+        String sameas_select = 
+                "PREFIX owl: <http://www.w3.org/2002/07/owl#>" +
+                "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
+                "SELECT DISTINCT ?sameas " +
+                "WHERE { " + 
+                "?person a foaf:Person ; " +
+                "        owl:sameAs ?sameas ." +
+                "}"
+                ;
         
         /*
-         * TODO: Initialization, create pipeline
+         * TODO: CONSTRUCT
          */
+        String friend_construct = 
+                "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
+                "CONSTRUCT { ?person foaf:knows ?friend }" + 
+                "WHERE { " + 
+                "?person a foaf:Person ; " +
+                "        foaf:knows ?friend ." +
+                "}"
+                ;
+
+        
+        URIServer queue = new SimpleURIQueue(null);
+        URIServer scheduler = new TDBScheduler(tdb_path, queue);
+        
+        ModelCreator creator = new ContentTypeModelCreator();
+        
+        URIExtractor friend_extractor = new SPARQLExtractor(scheduler, friend_select, null);
+        URIExtractor sameas_extractor = new SPARQLExtractor(scheduler, sameas_select, friend_extractor);
+        
+        ModelFilter filter = new SPARQLFilter(friend_construct, null);
+        
+        NamedModelStore store = new TDBModelStore(tdb_path);
+        
+        Pipeline pipeline = new Pipeline(creator, sameas_extractor, filter, store);
+        
+        MinerPool miners = new MinerPool(scheduler, pipeline, 5);
+        
        
         URI starting_uri = null;
         
@@ -63,15 +113,16 @@ public class LDCreeper {
             starting_uri = new URI(starting_point);
         } catch (URISyntaxException ex) {
             Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, null, ex);
+            return;
         }
         
         URIContext starting_context = new URIContext(starting_uri, 0);
         
         scheduler.proposeURI(starting_context);
         
-        /*
-         * miners.start();
-         * miners.join();
-         */
+        
+        miners.start();
+        miners.join();
+    
     }
 }

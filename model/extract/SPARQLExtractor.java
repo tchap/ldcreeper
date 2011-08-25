@@ -38,8 +38,8 @@ import ldcreeper.scheduling.URIServer;
  */
 public class SPARQLExtractor extends URIExtractor {
 
-    private URIServer server;
-    private Query query;
+    private final URIServer server;
+    private final Query query;
 
     public SPARQLExtractor(URIServer server, String query, URIExtractor extractor) {
         super(extractor);
@@ -48,7 +48,7 @@ public class SPARQLExtractor extends URIExtractor {
     }
 
     @Override
-    public void extractFrom(Model model, int depth) {
+    protected void extractFrom(Model model, int depth) {
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         ResultSet result = qexec.execSelect();
         
@@ -62,7 +62,7 @@ public class SPARQLExtractor extends URIExtractor {
                     URIContext uric;
                             
                     try {
-                         uric = new URIContext(new URI(var.getURI()), depth);
+                         uric = new URIContext(new URI(var.getURI()), depth + 1);
                     } catch (URISyntaxException ex) {
                         Logger.getLogger(SPARQLExtractor.class.getName()).log(Level.INFO, null, ex);
                         continue;

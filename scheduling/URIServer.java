@@ -22,7 +22,46 @@ package ldcreeper.scheduling;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public interface URIServer {
-    public void proposeURI(URIContext uri);
-    public URIContext requestURI();
+public abstract class URIServer {
+    
+    private final URIServer next_server;
+
+    public URIServer(URIServer next_server) {
+        this.next_server = next_server;
+    }
+    
+    public boolean proposeURI(URIContext uri) {
+        if (propose(uri)) {
+            if (next_server != null) {
+                return next_server.proposeURI(uri);
+            }
+            else {
+                return true;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    
+    public URIContext requestURI() {
+        if (next_server != null) {
+            return next_server.requestURI();
+        }
+        else {
+            return null;
+        }
+    }
+    
+    public Object getLock() {
+        if (next_server != null) {
+            return next_server.getLock();
+        }
+        else {
+            return null;
+        }
+    }
+    
+    abstract protected boolean propose(URIContext uri);
+    
 }

@@ -24,8 +24,8 @@ import java.net.URI;
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
 public class URIContext {
-    private URI uri;
-    private int depth;
+    private final URI uri;
+    private final int depth;
 
     public URIContext(URI uri, int depth) {
         this.uri = uri;

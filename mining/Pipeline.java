@@ -18,8 +18,6 @@
 package ldcreeper.mining;
 
 import com.hp.hpl.jena.rdf.model.Model;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import ldcreeper.model.create.ModelCreator;
 import ldcreeper.model.extract.URIExtractor;
 import ldcreeper.model.filter.ModelFilter;
@@ -32,10 +30,10 @@ import ldcreeper.model.store.NamedModelStore;
  */
 public class Pipeline implements Runnable, Cloneable {
     
-    private ModelCreator creator;
-    private URIExtractor extractor;
-    private ModelFilter filter;
-    private NamedModelStore store;
+    private final ModelCreator creator;
+    private final URIExtractor extractor;
+    private final ModelFilter filter;
+    private final NamedModelStore store;
     
     protected URIContext uric;
 

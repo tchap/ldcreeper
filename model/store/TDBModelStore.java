@@ -27,7 +27,7 @@ import com.hp.hpl.jena.tdb.TDBFactory;
  */
 public class TDBModelStore implements NamedModelStore {
     
-    private String directory;
+    private final String directory;
     
     public TDBModelStore(String directory) {
         this.directory = directory + "main";
@@ -36,7 +36,7 @@ public class TDBModelStore implements NamedModelStore {
     @Override
     public void storeNamedGraph(Graph graph, String name) {
         /*
-         * TODO: Implement saveNamedGraph()
+         * TODO: Implement storeNamedGraph()
          */
         throw new UnsupportedOperationException("Not supported yet.");
     }

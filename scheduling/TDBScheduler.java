@@ -29,29 +29,26 @@ import java.net.URI;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public class TDBScheduler implements URIServer {
-    
-    private URIServer server;
-    private String directory;
+public class TDBScheduler extends URIServer {
     
     private static final String property_name = "scheduling_state";
     private static final String property_value = "visited";
 
-    public TDBScheduler(URIServer server, String directory) {
-        this.server = server;
+    private final String directory;
+    
+    public TDBScheduler(String directory, URIServer server) {
+        super(server);
         this.directory = directory + "scheduling";
     }
 
     @Override
-    public void proposeURI(URIContext uri) {
-        if (!visited(uri.getURI())) {
-            server.proposeURI(uri);
+    protected boolean propose(URIContext uri) {
+        if (visited(uri.getURI())) {
+            return false;
         }
-    }
-
-    @Override
-    public URIContext requestURI() {
-        return server.requestURI();
+        else {
+            return true;
+        }
     }
     
     private boolean visited(URI u) {

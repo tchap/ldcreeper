@@ -25,7 +25,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  */
 public abstract class ModelFilter {
     
-    private ModelFilter next_filter;
+    private final ModelFilter next_filter;
 
     public ModelFilter(ModelFilter next_filter) {
         this.next_filter = next_filter;
@@ -35,7 +35,7 @@ public abstract class ModelFilter {
         Model filtered = filter(model);
         
         if (next_filter != null) {
-            return next_filter.filterModel(filtered);
+            return filtered.add(next_filter.filterModel(model));
         }
         else {
             return filtered;

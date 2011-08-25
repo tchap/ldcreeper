@@ -23,13 +23,28 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
-public class SimpleURIQueue implements URIServer {
+public class SimpleURIQueue extends URIServer {
     
-    private ConcurrentLinkedQueue<URIContext> queue;
+    private final ConcurrentLinkedQueue<URIContext> queue;
+    private final Object queue_lock;
 
+    public SimpleURIQueue(URIServer next_server) {
+        super(next_server);
+        queue = new ConcurrentLinkedQueue<URIContext>();
+        queue_lock = new Object();
+    }
+    
     @Override
-    public void proposeURI(URIContext uri) {
-        queue.offer(uri);
+    protected boolean propose(URIContext uri) {
+         if (queue.offer(uri)) {
+             synchronized (queue_lock) {
+                queue_lock.notify();
+             }
+             return true;
+         }
+         else {
+             return false;
+         }
     }
 
     @Override
@@ -37,4 +52,8 @@ public class SimpleURIQueue implements URIServer {
         return queue.poll();
     }
     
+    @Override
+    public Object getLock() {
+        return queue_lock;
+    }
 }

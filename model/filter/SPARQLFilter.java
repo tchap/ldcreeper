@@ -29,7 +29,7 @@ import com.hp.hpl.jena.rdf.model.Model;
  */
 public class SPARQLFilter extends ModelFilter {
 
-    private Query query;
+    private final Query query;
 
     public SPARQLFilter(String query, ModelFilter next_filter) {
         super(next_filter);
