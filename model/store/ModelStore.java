@@ -25,6 +25,5 @@ import com.hp.hpl.jena.rdf.model.Model;
  * @author Ondrej Kupka <ondra dot cap at gmail dot com>
  */
 public interface ModelStore {
-    public void storeGraph(Graph graph);
-    public void storeModel(Model model);
+    
 }

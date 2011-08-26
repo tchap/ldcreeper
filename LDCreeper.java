@@ -50,42 +50,44 @@ public class LDCreeper {
     public static void main(String[] args) {
         String starting_point = "http://dig.csail.mit.edu/2008/webdav/timbl/foaf.rdf";
         String tdb_path = "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB/";
-        String query_path = "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/query/";
         
-        /*
-         * TODO: Write query
-         */
+
         /*
          * TODO: Read query from file
+         */
+        /*
+         * TODO: Not sure about the queries
          */
         String friend_select = 
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
                 "SELECT DISTINCT ?friend " +
                 "WHERE { " + 
-                "?person a foaf:Person ; " +
-                "        foaf:knows ?friend ." +
+                "   { ?person foaf:knows ?friend . }" +
+                "   union" +
+                "   { ?friend foaf:knows ?person . }" +
                 "}"
                 ;
         
-        String sameas_select = 
+        String ss_select = 
                 "PREFIX owl: <http://www.w3.org/2002/07/owl#>" +
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
-                "SELECT DISTINCT ?sameas " +
+                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+                "SELECT DISTINCT ?sameas_seealso " +
                 "WHERE { " + 
-                "?person a foaf:Person ; " +
-                "        owl:sameAs ?sameas ." +
+                "   ?person a foaf:Person . " +
+                "   {" +
+                "       { ?person owl:sameAs ?sameas_seealso . }" +
+                "       union" +
+                "       { ?person rdfs:seeAlso ?sameas_seealso . }" +
+                "   }" +
                 "}"
                 ;
         
-        /*
-         * TODO: CONSTRUCT
-         */
         String friend_construct = 
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
                 "CONSTRUCT { ?person foaf:knows ?friend }" + 
                 "WHERE { " + 
-                "?person a foaf:Person ; " +
-                "        foaf:knows ?friend ." +
+                "   ?person foaf:knows ?friend ." +
                 "}"
                 ;
 
@@ -98,7 +100,7 @@ public class LDCreeper {
         ModelCreator creator = new ContentTypeModelCreator();
         
         URIExtractor friend_extractor = new SPARQLExtractor(server, friend_select, null);
-        URIExtractor sameas_extractor = new SPARQLExtractor(server, sameas_select, friend_extractor);
+        URIExtractor sameas_extractor = new SPARQLExtractor(server, ss_select, friend_extractor);
         
         ModelFilter filter = new SPARQLFilter(friend_construct, null);
         
@@ -106,7 +108,7 @@ public class LDCreeper {
         
         Pipeline pipeline = new Pipeline(creator, sameas_extractor, filter, store);
         
-        MinerPool miners = new MinerPool(server, pipeline, 5);
+        MinerPool miners = new MinerPool(server, pipeline, 1);
         
        
         URI starting_uri = null;

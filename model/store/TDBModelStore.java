@@ -18,8 +18,11 @@
 package ldcreeper.model.store;
 
 import com.hp.hpl.jena.graph.Graph;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.tdb.TDBFactory;
+
 
 /**
  *
@@ -27,38 +30,26 @@ import com.hp.hpl.jena.tdb.TDBFactory;
  */
 public class TDBModelStore implements NamedModelStore {
     
-    private final String directory;
+    private final Dataset dataset;
     
     public TDBModelStore(String directory) {
-        this.directory = directory + "main";
+        String dir = directory + "main";
+        dataset = TDBFactory.createDataset(dir);
     }
     
     @Override
     public void storeNamedGraph(Graph graph, String name) {
-        /*
-         * TODO: Implement storeNamedGraph()
-         */
-        throw new UnsupportedOperationException("Not supported yet.");
+        dataset.asDatasetGraph().addGraph(Node.createURI(name), graph);
     }
 
+    /*
+     * TODO: Find out how the hell does TDB API work and rewrite this
+     */
     @Override
-    public synchronized void storeNamedModel(Model model, String name) {
-        Model tdb_model = TDBFactory.createNamedModel(name, directory);
-        tdb_model.add(model).close();
-    }
-
-    @Override
-    public void storeGraph(Graph graph) {
-        /*
-         * TODO: Implement saveGraph()
-         */
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    public synchronized void storeModel(Model model) {
-        Model tdb_model = TDBFactory.createModel(directory);
-        tdb_model.add(model).close();
+    public synchronized void storeNamedModel(Model model, String uri_name) {
+        Model tdb_model = dataset.getNamedModel(uri_name);
+        tdb_model.add(model);
+        tdb_model.close();
     }
     
 }

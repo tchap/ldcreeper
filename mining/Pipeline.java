@@ -56,9 +56,20 @@ public class Pipeline implements Runnable, Cloneable {
         
         Model model = creator.createFromURI(uric.getURI());
         
+        if (model == null) {
+            return;
+        }
+        
         extractor.extractFromModel(model, uric.getDepth());
         
         model = filter.filterModel(model);
+        
+        /*
+         * TODO: Is this check necessary?
+         */
+        if (model == null) {
+            return;
+        }
         
         store.storeNamedModel(model, uric.getURI().toString());
     }

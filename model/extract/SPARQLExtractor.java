@@ -21,14 +21,13 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import ldcreeper.scheduling.URIContext;
 import ldcreeper.scheduling.URIServer;
 
@@ -49,22 +48,32 @@ public class SPARQLExtractor extends URIExtractor {
 
     @Override
     protected void extractFrom(Model model, int depth) {
+        /*
+         * TODO: Understand better how ResultSet works => more efficient code
+         */
+        System.err.println("Extracting new URIs from model");
+        
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         ResultSet result = qexec.execSelect();
         
         while (result.hasNext()) {
-            Iterator<Var> vars = result.nextBinding().vars();
+            System.err.println("Processing next binding");
             
-            while (vars.hasNext()) {
-                Var var = vars.next();
+            QuerySolution solution = result.nextSolution();
+            Iterator<String> varNames = solution.varNames();
+            
+            while (varNames.hasNext()) {
+                String varName = varNames.next();
+                Resource res = solution.getResource(varName);
                 
-                if (var.isURI()) {
+                System.err.println("Processing next variable: " + varName + " = " + res.toString());
+                
+                if (res.isURIResource()) {
                     URIContext uric;
                             
                     try {
-                         uric = new URIContext(new URI(var.getURI()), depth + 1);
+                         uric = new URIContext(new URI(res.getURI()), depth + 1);
                     } catch (URISyntaxException ex) {
-                        Logger.getLogger(SPARQLExtractor.class.getName()).log(Level.INFO, null, ex);
                         continue;
                     }
                     

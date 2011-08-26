@@ -55,6 +55,8 @@ public class ContentTypeModelCreator implements ModelCreator {
 
     @Override
     public Model createFromURI(URI uri) {
+        System.err.println("Creating model from " + uri.toString());
+        
         URLConnection conn;
         
         try {
@@ -67,11 +69,11 @@ public class ContentTypeModelCreator implements ModelCreator {
             return null;
         }
         
-        String mime = conn.getContentType();
+        String mime = conn.getContentType().split(";")[0];
         String lang = ct_map.get(mime);
         
         if (lang == null) {
-            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.INFO, "Content type '{0}'not supported", mime);
+            System.err.println("Content type '" + mime + "' not supported");
             return null;
         }
         
