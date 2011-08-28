@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Ondrej Kupka <ondra dot cap at gmail dot com>
+ * Copyright (C) 2011 Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,7 +40,7 @@ import ldcreeper.scheduling.URIServer;
 
 /**
  *
- * @author Ondrej Kupka <ondra dot cap at gmail dot com>
+ * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
 public class LDCreeper {
 
@@ -95,7 +95,7 @@ public class LDCreeper {
         URIServer queue = new SimpleURIQueue(null);
         URIServer scheduler = new TDBScheduler(tdb_path, queue);
         
-        URIServer server = queue;
+        URIServer server = scheduler;
         
         ModelCreator creator = new ContentTypeModelCreator();
         
@@ -108,7 +108,7 @@ public class LDCreeper {
         
         Pipeline pipeline = new Pipeline(creator, sameas_extractor, filter, store);
         
-        MinerPool miners = new MinerPool(server, pipeline, 1);
+        MinerPool miners = new MinerPool(server, pipeline, 4);
         
        
         URI starting_uri = null;
