@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Ondrej Kupka <ondra dot cap at gmail dot com>
+ * Copyright (C) 2011 Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@ import ldcreeper.scheduling.URIServer;
 
 /**
  *
- * @author Ondrej Kupka <ondra dot cap at gmail dot com>
+ * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
 public class SPARQLExtractor extends URIExtractor {
 
