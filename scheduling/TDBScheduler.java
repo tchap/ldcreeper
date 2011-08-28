@@ -57,9 +57,6 @@ public class TDBScheduler extends URIServer {
     }
     
     private boolean visited(URI uri) {
-        /*
-         * TODO: Implement 1 writer XOR N readers semantics
-         */
         Resource uri_res;
         boolean visited;
         
