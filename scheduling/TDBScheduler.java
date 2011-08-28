@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Ondrej Kupka <ondra dot cap at gmail dot com>
+ * Copyright (C) 2011 Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,26 +19,31 @@ package ldcreeper.scheduling;
 
 
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.tdb.TDBFactory;
+import com.hp.hpl.jena.vocabulary.RDF;
+import com.hp.hpl.jena.vocabulary.RDFS;
 import java.net.URI;
 
 
 /**
  *
- * @author Ondrej Kupka <ondra dot cap at gmail dot com>
+ * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
 public class TDBScheduler extends URIServer {
-    
-    private static final String property_name = "scheduling_state";
-    private static final String property_value = "visited";
 
-    private final String directory;
+    private final Model visited_model;
+    private final Object cond;
+    private int writers_count;
+    private int readers_count;
     
     public TDBScheduler(String directory, URIServer server) {
         super(server);
-        this.directory = directory + "scheduling";
+        String dir = directory + "visited";
+        visited_model = TDBFactory.createModel(dir);
+        cond = new Object();
+        writers_count = 0;
+        readers_count = 0;
     }
 
     @Override
@@ -51,32 +56,61 @@ public class TDBScheduler extends URIServer {
         }
     }
     
-    private boolean visited(URI u) {
+    private boolean visited(URI uri) {
         /*
-         * TODO: Don't create separate model for every query
+         * TODO: Implement 1 writer XOR N readers semantics
          */
-        /*
-         * TODO: Rewrite visited() to use standard predicate
-         */
-        Model model = TDBFactory.createModel(directory);
+        Resource uri_res;
+        boolean visited;
         
-        Resource uri = model.createResource(u.toString());
-        Property state = model.createProperty(property_name);
+        synchronized (cond) {
+            while (writers_count > 0) {
+                try {
+                    cond.wait();
+                }
+                catch (InterruptedException ex) {}
+            }
+            
+            readers_count += 1;
+        }
         
-        if (model.contains(uri, state, property_value)) {
-            model.close();
+        uri_res =  visited_model.createResource(uri.toString());
+        visited = visited_model.contains(uri_res, RDF.type, RDFS.Resource);
+        
+        synchronized (cond) {
+            readers_count -= 1;
+            cond.notifyAll();
+        }
+        
+        if (visited) {
+            System.err.println("SKIP " + uri.toString());
+            
             return true;
         }
         else {
-            registerVisitedURI(model, uri, state);
-            model.close();
+            System.err.println("PROPOSE " + uri.toString());
+            
+            synchronized (cond) {
+                while (readers_count > 0 || writers_count > 0) {
+                    try {
+                        cond.wait();
+                    }
+                    catch (InterruptedException ex) {}
+                }
+                
+                writers_count += 1;
+            }
+            
+            visited_model.add(uri_res, RDF.type, RDFS.Resource); 
+            visited_model.commit();
+            
+            synchronized (cond) {
+                writers_count -= 1;
+                cond.notifyAll();
+            }
+            
             return false;
-        }
+        }  
     }
     
-    private synchronized void registerVisitedURI(Model model, Resource uri, Property property) { 
-        uri.addProperty(property, property_value);
-        model.commit();
-    }
-
 }
