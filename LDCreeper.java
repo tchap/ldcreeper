@@ -53,33 +53,20 @@ public class LDCreeper {
         
 
         /*
-         * TODO: Read query from file
+         * TODO: Read queries from a file
          */
         /*
-         * TODO: Not sure about the queries
+         * TODO: Rewrite CONSTRUCT query to follow anon nodes
          */
-        String friend_select = 
+        String extractor_select = 
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
-                "SELECT DISTINCT ?friend " +
-                "WHERE { " + 
-                "   { ?person foaf:knows ?friend . }" +
-                "   union" +
-                "   { ?friend foaf:knows ?person . }" +
-                "}"
-                ;
-        
-        String ss_select = 
                 "PREFIX owl: <http://www.w3.org/2002/07/owl#>" +
-                "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
                 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
-                "SELECT DISTINCT ?sameas_seealso " +
+                "SELECT DISTINCT ?person ?sameas ?seealso" +
                 "WHERE { " + 
                 "   ?person a foaf:Person . " +
-                "   {" +
-                "       { ?person owl:sameAs ?sameas_seealso . }" +
-                "       union" +
-                "       { ?person rdfs:seeAlso ?sameas_seealso . }" +
-                "   }" +
+                "   OPTIONAL { ?person owl:sameAs ?sameas . }" +
+                "   OPTIONAL { ?person rdfs:seeAlso ?seealso . }" +
                 "}"
                 ;
         
@@ -99,16 +86,15 @@ public class LDCreeper {
         
         ModelCreator creator = new ContentTypeModelCreator();
         
-        URIExtractor friend_extractor = new SPARQLExtractor(server, friend_select, null);
-        URIExtractor sameas_extractor = new SPARQLExtractor(server, ss_select, friend_extractor);
+        URIExtractor extractor = new SPARQLExtractor(server, extractor_select, null);
         
         ModelFilter filter = new SPARQLFilter(friend_construct, null);
         
         NamedModelStore store = new TDBModelStore(tdb_path);
         
-        Pipeline pipeline = new Pipeline(creator, sameas_extractor, filter, store);
+        Pipeline pipeline = new Pipeline(creator, extractor, filter, store);
         
-        MinerPool miners = new MinerPool(server, pipeline, 4);
+        MinerPool miners = new MinerPool(server, pipeline, 1);
         
        
         URI starting_uri = null;
