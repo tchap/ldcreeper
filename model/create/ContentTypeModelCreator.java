@@ -48,7 +48,7 @@ public class ContentTypeModelCreator implements ModelCreator {
         try {
             return createFromURI(new URI(uri));
         } catch (URISyntaxException ex) {
-            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.INFO, null, ex);
+            System.err.println("Malformed URI");
             return null;
         }
     }
@@ -62,7 +62,7 @@ public class ContentTypeModelCreator implements ModelCreator {
         try {
             conn = uri.toURL().openConnection();
         } catch (MalformedURLException ex) {
-            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.INFO, null, ex);
+            System.err.println("Malformed URL");
             return null;
         } catch (IOException ex) {
             Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.WARNING, null, ex);
