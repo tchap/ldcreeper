@@ -94,8 +94,8 @@ public class MinerPool {
             
             while (true) {
                 
-                synchronized (server.getLock()) {
-                    if ((uri = server.requestURI()) == null) {
+                synchronized (server.getCond()) {
+                    if ((uri = server.nextURI()) == null) {
                         if (isLastWorker()) {
                             interruptMiners();
                             System.err.println("Miner " + tid + " exiting");
@@ -105,7 +105,7 @@ public class MinerPool {
                         try {
                             System.err.println("Miner " + tid + " waiting");
                             sleeping_miners += 1;
-                            server.getLock().wait();
+                            server.getCond().wait();
                             sleeping_miners -= 1;
                             System.err.println("Miner " + tid + " woken up");
                             continue;

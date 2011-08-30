@@ -76,7 +76,7 @@ public class SPARQLExtractor extends URIExtractor {
                         continue;
                     }
                     
-                    server.proposeURI(uric);
+                    server.submitURI(uric);
                 }
             }        
         }

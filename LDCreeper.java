@@ -33,7 +33,6 @@ import ldcreeper.model.filter.SPARQLFilter;
 import ldcreeper.model.store.NamedModelStore;
 import ldcreeper.model.store.TDBModelStore;
 import ldcreeper.scheduling.TDBScheduler;
-import ldcreeper.scheduling.TDBURIPool;
 import ldcreeper.scheduling.URIServer;
 
 
@@ -77,15 +76,8 @@ public class LDCreeper {
                 "}"
                 ;
 
-        /*
-         * TODO: Decide and create more suitable persistent pool
-         */
-        URIServer pool = new TDBURIPool(tdb_path, null);
         
-        /*
-         * TODO: Decide and create more suitable persistent scheduler
-         */
-        URIServer server = new TDBScheduler(tdb_path, pool);
+        URIServer server = new TDBScheduler(tdb_path);
         
         
         ModelCreator creator = new ContentTypeModelCreator();
@@ -110,7 +102,7 @@ public class LDCreeper {
             return;
         }
         
-        server.proposeURI(starting_uri);
+        server.submitURI(starting_uri);
         
         
         miners.start();

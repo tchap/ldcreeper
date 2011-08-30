@@ -24,46 +24,9 @@ import java.net.URI;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public abstract class URIServer {
-    
-    private final URIServer next_server;
-
-    public URIServer(URIServer next_server) {
-        this.next_server = next_server;
-    }
-    
-    public boolean proposeURI(URI uri) {
-        if (propose(uri)) {
-            if (next_server != null) {
-                return next_server.proposeURI(uri);
-            }
-            else {
-                return true;
-            }
-        }
-        else {
-            return false;
-        }
-    }
-    
-    public URI requestURI() {
-        if (next_server != null) {
-            return next_server.requestURI();
-        }
-        else {
-            return null;
-        }
-    }
-    
-    public Object getLock() {
-        if (next_server != null) {
-            return next_server.getLock();
-        }
-        else {
-            return null;
-        }
-    }
-    
-    abstract protected boolean propose(URI uri);
-    
+public interface URIServer {
+    public void submitURI(URI uri);
+    public URI nextURI();
+    public void setURIVisited(URI uri);
+    public Object getCond();
 }
