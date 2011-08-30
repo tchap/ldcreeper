@@ -18,10 +18,10 @@
 package ldcreeper.mining;
 
 import com.hp.hpl.jena.rdf.model.Model;
+import java.net.URI;
 import ldcreeper.model.create.ModelCreator;
 import ldcreeper.model.extract.URIExtractor;
 import ldcreeper.model.filter.ModelFilter;
-import ldcreeper.scheduling.URIContext;
 import ldcreeper.model.store.NamedModelStore;
 
 /**
@@ -35,7 +35,7 @@ public class Pipeline implements Runnable, Cloneable {
     private final ModelFilter filter;
     private final NamedModelStore store;
     
-    protected URIContext uric;
+    protected URI uric;
 
     public Pipeline(ModelCreator creator, URIExtractor extractor, ModelFilter filter, NamedModelStore store) {
         this.creator = creator;
@@ -44,7 +44,7 @@ public class Pipeline implements Runnable, Cloneable {
         this.store = store;
     }
     
-    public void setURIContext(URIContext uric) {
+    public void setURI(URI uric) {
         this.uric = uric;
     }
     
@@ -54,13 +54,13 @@ public class Pipeline implements Runnable, Cloneable {
             throw new NullPointerException("URI Context not set");
         }
         
-        Model model = creator.createFromURI(uric.getURI());
+        Model model = creator.createFromURI(uric);
         
         if (model == null) {
             return;
         }
         
-        extractor.extractFromModel(model, uric.getDepth());
+        extractor.extractFromModel(model);
         
         model = filter.filterModel(model);
         
@@ -71,13 +71,13 @@ public class Pipeline implements Runnable, Cloneable {
             return;
         }
         
-        store.storeNamedModel(model, uric.getURI().toString());
+        store.storeNamedModel(model, uric.toString());
     }
 
     @Override
     protected Pipeline clone() throws CloneNotSupportedException {
         Pipeline pipeline = (Pipeline) super.clone();
-        pipeline.setURIContext(null);
+        pipeline.setURI(null);
         return pipeline;
     }
 }

@@ -17,9 +17,9 @@
  */
 package ldcreeper.mining;
 
+import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import ldcreeper.scheduling.URIContext;
 import ldcreeper.scheduling.URIServer;
 
 /**
@@ -90,7 +90,7 @@ public class MinerPool {
         
         @Override
         public void run() {
-            URIContext uri;
+            URI uri;
             
             while (true) {
                 
@@ -125,7 +125,7 @@ public class MinerPool {
                     return;
                 }
                 
-                pipe_clone.setURIContext(uri);
+                pipe_clone.setURI(uri);
                 
                 System.err.println("Miner " + tid + " processing URI");
                 
