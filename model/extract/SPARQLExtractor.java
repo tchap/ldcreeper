@@ -28,7 +28,6 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
-import ldcreeper.scheduling.URIContext;
 import ldcreeper.scheduling.URIServer;
 
 /**
@@ -47,7 +46,7 @@ public class SPARQLExtractor extends URIExtractor {
     }
 
     @Override
-    protected void extractFrom(Model model, int depth) {
+    protected void extractFrom(Model model) {
         /*
          * TODO: Understand better how ResultSet works => more efficient code
          */
@@ -69,10 +68,10 @@ public class SPARQLExtractor extends URIExtractor {
                 System.err.println("Processing next variable: " + varName + " = " + res.toString());
                 
                 if (res.isURIResource()) {
-                    URIContext uric;
+                    URI uric;
                             
                     try {
-                         uric = new URIContext(new URI(res.getURI()), depth + 1);
+                         uric = new URI(res.getURI());
                     } catch (URISyntaxException ex) {
                         continue;
                     }

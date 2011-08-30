@@ -31,14 +31,14 @@ public abstract class URIExtractor {
         this.next_extractor = next_extractor;
     }
     
-    public void extractFromModel(Model model, int depth) {
-        extractFrom(model, depth);
+    public void extractFromModel(Model model) {
+        extractFrom(model);
         
         if (next_extractor != null) {
-            next_extractor.extractFromModel(model, depth);
+            next_extractor.extractFromModel(model);
         }
     }
     
-    abstract protected void extractFrom(Model model, int depth);
+    abstract protected void extractFrom(Model model);
       
 }
