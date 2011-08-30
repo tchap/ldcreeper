@@ -120,6 +120,9 @@ public class TDBScheduler implements URIServer {
 
     @Override
     public void setURIVisited(URI uri) {
+        /*
+         * TODO: Implement this
+         */
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
