@@ -54,9 +54,6 @@ public class LDCreeper {
         /*
          * TODO: Read queries from a file
          */
-        /*
-         * TODO: Rewrite CONSTRUCT query to follow anon nodes
-         */
         String extractor_select = 
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
                 "PREFIX owl: <http://www.w3.org/2002/07/owl#>" +
@@ -69,6 +66,9 @@ public class LDCreeper {
                 "}"
                 ;
         
+        /*
+         * TODO: Rewrite query to mine something more useful
+         */
         String friend_construct = 
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
                 "CONSTRUCT { ?person foaf:knows ?friend }" + 
