@@ -77,8 +77,14 @@ public class LDCreeper {
                 "}"
                 ;
 
-        
+        /*
+         * TODO: Decide and create more suitable persistent pool
+         */
         URIServer pool = new TDBURIPool(tdb_path, null);
+        
+        /*
+         * TODO: Decide and create more suitable persistent scheduler
+         */
         URIServer server = new TDBScheduler(tdb_path, pool);
         
         
