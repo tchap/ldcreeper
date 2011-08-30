@@ -47,8 +47,8 @@ public class TDBScheduler extends URIServer {
     }
 
     @Override
-    protected boolean propose(URIContext uri) {
-        if (visited(uri.getURI())) {
+    protected boolean propose(URI uri) {
+        if (visited(uri)) {
             return false;
         }
         else {

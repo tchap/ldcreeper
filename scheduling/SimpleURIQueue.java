@@ -17,6 +17,7 @@
  */
 package ldcreeper.scheduling;
 
+import java.net.URI;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -25,18 +26,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class SimpleURIQueue extends URIServer {
     
-    private final ConcurrentLinkedQueue<URIContext> queue;
+    private final ConcurrentLinkedQueue<URI> queue;
     private final Object queue_lock;
 
     public SimpleURIQueue(URIServer next_server) {
         super(next_server);
-        queue = new ConcurrentLinkedQueue<URIContext>();
+        queue = new ConcurrentLinkedQueue<URI>();
         queue_lock = new Object();
     }
     
     @Override
-    protected boolean propose(URIContext uri) {
-        System.err.println("URI proposed: " + uri.getURI().toString());
+    protected boolean propose(URI uri) {
+        System.err.println("URI proposed: " + uri.toString());
         
          if (queue.offer(uri)) {
              synchronized (queue_lock) {
@@ -50,7 +51,7 @@ public class SimpleURIQueue extends URIServer {
     }
 
     @Override
-    public URIContext requestURI() {
+    public URI requestURI() {
         return queue.poll();
     }
     

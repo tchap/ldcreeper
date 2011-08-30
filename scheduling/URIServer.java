@@ -17,6 +17,8 @@
  */
 package ldcreeper.scheduling;
 
+import java.net.URI;
+
 
 /**
  *
@@ -30,7 +32,7 @@ public abstract class URIServer {
         this.next_server = next_server;
     }
     
-    public boolean proposeURI(URIContext uri) {
+    public boolean proposeURI(URI uri) {
         if (propose(uri)) {
             if (next_server != null) {
                 return next_server.proposeURI(uri);
@@ -44,7 +46,7 @@ public abstract class URIServer {
         }
     }
     
-    public URIContext requestURI() {
+    public URI requestURI() {
         if (next_server != null) {
             return next_server.requestURI();
         }
@@ -62,6 +64,6 @@ public abstract class URIServer {
         }
     }
     
-    abstract protected boolean propose(URIContext uri);
+    abstract protected boolean propose(URI uri);
     
 }
