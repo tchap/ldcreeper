@@ -130,6 +130,11 @@ public class MinerPool {
                 System.err.println("Miner " + tid + " processing URI");
                 
                 pipe_clone.run();
+                
+                /*
+                 * TODO: Is this place correct for marking?
+                 */
+                server.markURIVisited(uri);
             }
             
         }
