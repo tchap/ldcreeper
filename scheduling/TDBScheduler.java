@@ -30,17 +30,20 @@ import java.net.URISyntaxException;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-/*
- * TODO: Optimize locking
- */
-/*
- * TODO: Make statements add/remove a more beautiful code
- */
 public class TDBScheduler implements URIServer {
 
+    /*
+     * TODO: Use better URI according to LD principles
+     */
     private static final String prefix_uri = "http://localhost/scheduling/";
-    
+ 
     private final Model sched_model;
+    
+    private final Property status;
+    private final RDFNode submitted;
+    private final RDFNode processing;
+    private final RDFNode visited;
+    
     private final Object submitted_cond;
     
     private final Object rw_cond;
@@ -54,12 +57,17 @@ public class TDBScheduler implements URIServer {
         sched_model = TDBFactory.createModel(dir);
         sched_model.setNsPrefix("sched", prefix_uri);
         
+        status = sched_model.createProperty(prefix_uri, "status");
+        submitted = sched_model.createLiteral("submitted");
+        processing = sched_model.createLiteral("being_processed");
+        visited = sched_model.createLiteral("visited");
+        
         submitted_cond = new Object();
         rw_cond = new Object();
         
         cleanup();
         
-        set_pool_size();
+        computePoolSize();
     }
     
     @Override
@@ -74,17 +82,16 @@ public class TDBScheduler implements URIServer {
             return;
         }
         
-        pool_size += 1;
-        System.err.println("[" + Integer.toString(pool_size) + "] SUBMIT " + uri.toString());
-        
-        
-        Property status_prop = sched_model.createProperty(prefix_uri, "status");
-        RDFNode submitted_lit = sched_model.createLiteral("submitted");
-        
-        sched_model.add(uri_res, status_prop, submitted_lit);
+        sched_model.add(uri_res, status, submitted);
         sched_model.commit();
         
         releaseWriteLock();
+        
+        
+        pool_size += 1;
+        
+        System.err.println("[" + Integer.toString(pool_size) + "] SUBMIT " + uri.toString());
+        
         
         synchronized (submitted_cond) {
             submitted_cond.notify();
@@ -93,61 +100,68 @@ public class TDBScheduler implements URIServer {
 
     @Override
     public URI nextURI() {
-        acquireWriteLock();
+        acquireReadLock();
         
-        Property status_prop = sched_model.createProperty(prefix_uri, "status");
-        RDFNode submitted_lit = sched_model.createLiteral("submitted");
-        ResIterator iter = sched_model.listResourcesWithProperty(status_prop, submitted_lit);
-       
-        URI uri = null;
+        ResIterator iter = sched_model.listResourcesWithProperty(status, submitted);
+        Resource uri_res;
         
-        if (iter.hasNext()) {
-            try {
-                uri = new URI(iter.nextResource().getURI());
-            } catch (URISyntaxException ex) {
-                System.err.println("Malformed URI");
-                releaseWriteLock();
+        try {
+            if (iter.hasNext()) {
+                uri_res = iter.nextResource();
+            }
+            else {
+                System.err.println("[" + Integer.toString(pool_size) + "] NEXT NULL");
                 return null;
             }
         }
-        else {
-            releaseWriteLock();
-            System.err.println("URI pool empty");
-            return null;
+        finally {
+            releaseReadLock();   
         }
         
-        pool_size -= 1;
-        System.err.println("[" + Integer.toString(pool_size) + "] NEXT " + uri.toString());
-       
-        Resource uri_res = sched_model.createResource(uri.toString());
-        RDFNode processing_lit = sched_model.createLiteral("being_processed");
         
-        sched_model.add(uri_res, status_prop, processing_lit);
-        sched_model.remove(uri_res, status_prop, submitted_lit);
+        acquireWriteLock();
+        
+        sched_model.add(uri_res, status, processing);
+        sched_model.remove(uri_res, status, submitted);
         sched_model.commit();
         
         releaseWriteLock();
         
+        pool_size -= 1;
+        
+        
+        URI uri;
+        
+        try {
+            uri = new URI(uri_res.getURI());
+        } catch (URISyntaxException ex) {
+            /*
+             * Cannot happen, only possible to insert valid URI
+             */
+            System.err.println("[" + Integer.toString(pool_size) + "] NEXT NULL");
+            return null;
+        }
+        
+        
+        System.err.println("[" + Integer.toString(pool_size) + "] NEXT " + uri.toString());
         
         return uri;
     }
 
     @Override
     public void markURIVisited(URI uri) {
-        System.err.println("[" + Integer.toString(pool_size) + "] VISITED " + uri.toString());
-        
         acquireWriteLock();
         
         Resource uri_res = sched_model.createResource(uri.toString());
-        Property status_prop = sched_model.createProperty(prefix_uri, "status");
-        RDFNode processing_lit = sched_model.createLiteral("being_processed");
-        RDFNode visited_lit = sched_model.createLiteral("visited");
 
-        sched_model.add(uri_res, status_prop, visited_lit);
-        sched_model.remove(uri_res, status_prop, processing_lit);
+        sched_model.add(uri_res, status, visited);
+        sched_model.remove(uri_res, status, processing);
         sched_model.commit();
         
         releaseWriteLock();
+        
+        
+        System.err.println("[" + Integer.toString(pool_size) + "] VISITED " + uri.toString());
     }
 
     @Override
@@ -158,22 +172,17 @@ public class TDBScheduler implements URIServer {
     private void cleanup() {
         acquireWriteLock();
         
-        Property status_prop = sched_model.createProperty(prefix_uri, "status");
-        RDFNode submitted_lit = sched_model.createLiteral("submitted");
-        RDFNode processing_lit = sched_model.createLiteral("being_processed");
-        RDFNode visited_lit = sched_model.createLiteral("visited");
-        
-        ResIterator iter = sched_model.listResourcesWithProperty(status_prop, processing_lit);
+        ResIterator iter = sched_model.listResourcesWithProperty(status, processing);
         
         while (iter.hasNext()) {
             Resource res = iter.nextResource();
             
-            if (sched_model.contains(res, status_prop, visited_lit)) {
-                sched_model.remove(res, status_prop, processing_lit);
+            if (sched_model.contains(res, status, visited)) {
+                sched_model.remove(res, status, processing);
             }
             else {
-                sched_model.add(res, status_prop, submitted_lit);
-                sched_model.remove(res, status_prop, processing_lit);
+                sched_model.add(res, status, submitted);
+                sched_model.remove(res, status, processing);
             }
         }
         
@@ -182,16 +191,14 @@ public class TDBScheduler implements URIServer {
         releaseWriteLock();
     }
     
-    private void set_pool_size() {
-        acquireWriteLock();
+    private void computePoolSize() {
+        acquireReadLock();
         
-        Property status_prop = sched_model.createProperty(prefix_uri, "status");
-        RDFNode submitted_lit = sched_model.createLiteral("submitted");
-        ResIterator iter = sched_model.listResourcesWithProperty(status_prop, submitted_lit);
+        ResIterator iter = sched_model.listResourcesWithProperty(status, submitted);
         
         pool_size = iter.toList().size();
         
-        releaseWriteLock();
+        releaseReadLock();
     }
     
     private void acquireReadLock() {

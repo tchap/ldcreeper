@@ -26,7 +26,7 @@ import java.net.URI;
  */
 public interface URIServer {
     public void submitURI(URI uri);
-    public URI nextURI();
+    public URI  nextURI();
     public void markURIVisited(URI uri);
     public Object getCond();
 }

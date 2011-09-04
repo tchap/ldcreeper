@@ -131,9 +131,6 @@ public class MinerPool {
                 
                 pipe_clone.run();
                 
-                /*
-                 * TODO: Is this place correct for marking?
-                 */
                 server.markURIVisited(uri);
             }
             

@@ -64,9 +64,6 @@ public class Pipeline implements Runnable, Cloneable {
         
         model = filter.filterModel(model);
         
-        /*
-         * TODO: Is this check necessary?
-         */
         if (model == null) {
             return;
         }
