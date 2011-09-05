@@ -31,19 +31,26 @@ import javax.sql.DataSource;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-/*
- * TODO: Distinguish 'database' and 'constraint' exceptions
- */
-/*
- * TODO: Make the code nicer
- */
-/*
- * TODO: Optimize final Strings, save as static perhaps?
- */
 public class PostgresScheduler implements URIServer {
 
-    private final DataSource ds;
+    private final String next_sql = 
+            "UPDATE scheduling " +
+            "SET state = 2 " +
+            "WHERE uri = ( " +
+            "   SELECT uri " +
+            "   FROM scheduling " +
+            "   WHERE state = 1 " +
+            "   LIMIT 1 " +
+            ") " +
+            "RETURNING uri ";
+        
+    
+    private final String DUPLICATE_TABLE = "42P07";
+    private final String UNIQUE_VIOLATION = "23505";
   
+    
+    private final DataSource ds;
+        
     private final Object cond = new Object();
 
     public PostgresScheduler(DataSource ds) {
@@ -66,29 +73,21 @@ public class PostgresScheduler implements URIServer {
             execUpdate(submit_sql);
             System.err.println("SUBMIT " + uri.toString());
         } catch (SQLException ex) {
-            System.err.println("SKIP " + uri.toString());
+            if (ex.getSQLState().equals(UNIQUE_VIOLATION)) {
+                System.err.println("SKIP " + uri.toString());
+            }
+            else {
+                Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         
     }
 
     @Override
     public URI nextURI() {
-        
-        final String next_sql = 
-                "UPDATE scheduling " +
-                "SET state = 2 " +
-                "WHERE uri = ( " +
-                "   SELECT uri " +
-                "   FROM scheduling " +
-                "   WHERE state = 1 " +
-                "   LIMIT 1 " +
-                ") " +
-                "RETURNING uri ";
-        
-        
         Connection conn = null;
         Statement stmt = null;
-        ResultSet result = null;
+        ResultSet result;
         String uri_string;
         
         try {
@@ -96,8 +95,13 @@ public class PostgresScheduler implements URIServer {
                 conn = ds.getConnection();
                 stmt = conn.createStatement();
                 result = stmt.executeQuery(next_sql);
-                result.next();
-                uri_string = result.getString("uri");
+                
+                if (result.next()) {
+                    uri_string = result.getString("uri");
+                }
+                else {
+                    return null;
+                }
             }
             finally {
                 if (stmt != null) stmt.close();
@@ -105,7 +109,7 @@ public class PostgresScheduler implements URIServer {
             }
         }
         catch (SQLException ex) {
-            System.err.println("Queue empty");
+            Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
             return null;
         }
         
@@ -126,18 +130,19 @@ public class PostgresScheduler implements URIServer {
 
     @Override
     public void markURIVisited(URI uri) {
-        
+        /*
+         * TODO: Is it meaningful to check if URI is in 'processing' state?
+         */
         final String visited_sql = 
                 "UPDATE scheduling " +
                 "SET state = 3 " +
-                "WHERE uri = '" + uri.toString() + "' AND state = 2 ;";
+                "WHERE uri = '" + uri.toString() + "' ; ";
+        
         
         try {
-            System.err.println("VISIT " + uri.toString());
+            System.err.println("PROCESSED " + uri.toString());
             
-            if (execUpdate(visited_sql) != 1) {
-                Logger.getLogger(PostgresScheduler.class.getName()).log(Level.WARNING, "No such uri in 'processing' state");
-            }
+            execUpdate(visited_sql);
         } catch (SQLException ex) {
             Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -161,13 +166,20 @@ public class PostgresScheduler implements URIServer {
                 "SET state = 1 " +
                 "WHERE state = 2 ;";
         
+        
         try {
             System.err.println("Creating scheduling relation...");
             execUpdate(create_table_sql);
             System.err.println("    => DONE");
             
         } catch (SQLException ex) {
-            System.err.println("    => Table probably already exists");
+            if (ex.getSQLState().equals(DUPLICATE_TABLE)) {
+                System.err.println("    => Relation already exists - DONE");
+            }
+            else {
+                Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+                System.exit(1);
+            }
         }
         
         try {

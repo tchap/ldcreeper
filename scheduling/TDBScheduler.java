@@ -158,7 +158,7 @@ public class TDBScheduler implements URIServer {
         releaseWriteLock();
         
         
-        System.err.println("[" + Integer.toString(pool_size) + "] VISITED " + uri.toString());
+        System.err.println("[" + Integer.toString(pool_size) + "] PROCESSED " + uri.toString());
     }
 
     @Override
