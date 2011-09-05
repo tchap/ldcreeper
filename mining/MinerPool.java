@@ -44,6 +44,8 @@ public class MinerPool {
         for (int i = 0; i < miners.length; ++i) {
             miners[i] = new Miner(i+1);
         }
+        
+        System.err.println("    => DONE");
     }
     
     public void start() {
@@ -52,12 +54,11 @@ public class MinerPool {
         for (Miner miner : miners) {
             miner.start();
         }
-
+        
+        System.err.println("    => DONE");
     }
     
     public void join() {
-        System.err.println("Joining miners");
-        
         for (Miner miner : miners) {
             
             try {
@@ -103,11 +104,9 @@ public class MinerPool {
                         }
 
                         try {
-                            System.err.println("Miner " + tid + " waiting");
                             sleeping_miners += 1;
                             server.getCond().wait();
                             sleeping_miners -= 1;
-                            System.err.println("Miner " + tid + " woken up");
                             continue;
                         } catch (InterruptedException ex) {
                             System.err.println("Miner " + tid + " exiting");
@@ -126,9 +125,6 @@ public class MinerPool {
                 }
                 
                 pipe_clone.setURI(uri);
-                
-                System.err.println("Miner " + tid + " processing URI");
-                
                 pipe_clone.run();
                 
                 server.markURIVisited(uri);

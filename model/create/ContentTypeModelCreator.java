@@ -48,21 +48,20 @@ public class ContentTypeModelCreator implements ModelCreator {
         try {
             return createFromURI(new URI(uri));
         } catch (URISyntaxException ex) {
-            System.err.println("Malformed URI");
+            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.INFO, null, ex);
             return null;
         }
+       
     }
 
     @Override
     public Model createFromURI(URI uri) {
-        System.err.println("Creating model from " + uri.toString());
-        
         URLConnection conn;
         
         try {
             conn = uri.toURL().openConnection();
         } catch (MalformedURLException ex) {
-            System.err.println("Malformed URL");
+            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.INFO, null, ex);
             return null;
         } catch (IOException ex) {
             Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.WARNING, null, ex);
@@ -73,7 +72,7 @@ public class ContentTypeModelCreator implements ModelCreator {
         String lang = ct_map.get(mime);
         
         if (lang == null) {
-            System.err.println("Content type '" + mime + "' not supported");
+            // Content-type not supported
             return null;
         }
         

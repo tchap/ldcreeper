@@ -50,22 +50,16 @@ public class SPARQLExtractor extends URIExtractor {
         /*
          * TODO: Understand better how ResultSet works => more efficient code
          */
-        System.err.println("Extracting new URIs from model");
-        
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         ResultSet result = qexec.execSelect();
         
         while (result.hasNext()) {
-            System.err.println("Processing next binding");
-            
             QuerySolution solution = result.nextSolution();
             Iterator<String> varNames = solution.varNames();
             
             while (varNames.hasNext()) {
                 String varName = varNames.next();
                 Resource res = solution.getResource(varName);
-                
-                System.err.println("Processing next variable: " + varName + " = " + res.toString());
                 
                 if (res.isURIResource()) {
                     URI uric;
