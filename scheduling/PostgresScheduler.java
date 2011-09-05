@@ -31,35 +31,42 @@ import javax.sql.DataSource;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
+/*
+ * TODO: Distinguish 'database' and 'constraint' exceptions
+ */
+/*
+ * TODO: Make the code nicer
+ */
+/*
+ * TODO: Optimize final Strings, save as static perhaps?
+ */
 public class PostgresScheduler implements URIServer {
 
     private final DataSource ds;
   
-    private final Object cond;
+    private final Object cond = new Object();
 
     public PostgresScheduler(DataSource ds) {
         this.ds = ds;
         
-        cond = new Object();
-        
         create_table();
-        
-        System.exit(1);
     }
     
     @Override
     public void submitURI(URI uri) {
         
         final String submit_sql =
-                "INSERT INTO scheduling VALUES (" + 
-                    uri.toString() + ", " +
-                    "1" +
+                "INSERT INTO scheduling VALUES ( " + 
+                "   '" + uri.toString() + "', " +
+                "   1 " +
                 ");";
         
-        try {
-            exec_update(submit_sql);
+        
+        try {    
+            execUpdate(submit_sql);
+            System.err.println("SUBMIT " + uri.toString());
         } catch (SQLException ex) {
-            Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println("SKIP " + uri.toString());
         }
         
     }
@@ -68,27 +75,40 @@ public class PostgresScheduler implements URIServer {
     public URI nextURI() {
         
         final String next_sql = 
-                "UPDATE scheduling" +
-                "SET state = 2" +
-                "WHERE uri = (" +
-                "   SELECT uri" +
-                "   FROM scheduling" +
-                "   WHERE state = 1" +
-                "   LIMIT 1" +
-                ")" +
-                "RETURNING uri";
+                "UPDATE scheduling " +
+                "SET state = 2 " +
+                "WHERE uri = ( " +
+                "   SELECT uri " +
+                "   FROM scheduling " +
+                "   WHERE state = 1 " +
+                "   LIMIT 1 " +
+                ") " +
+                "RETURNING uri ";
         
-        ResultSet result;
+        
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet result = null;
         String uri_string;
         
         try {
-            result = exec_query(next_sql);
-            uri_string = result.getString("uri");
-        } catch (SQLException ex) {
-            Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            try {
+                conn = ds.getConnection();
+                stmt = conn.createStatement();
+                result = stmt.executeQuery(next_sql);
+                result.next();
+                uri_string = result.getString("uri");
+            }
+            finally {
+                if (stmt != null) stmt.close();
+                if (conn != null) conn.close();
+            }
+        }
+        catch (SQLException ex) {
+            System.err.println("Queue empty");
             return null;
         }
-
+        
         
         URI uri;
         
@@ -99,6 +119,8 @@ public class PostgresScheduler implements URIServer {
             return null;
         }
         
+        System.err.println("NEXT " + uri.toString());
+        
         return uri;
     }
 
@@ -106,12 +128,14 @@ public class PostgresScheduler implements URIServer {
     public void markURIVisited(URI uri) {
         
         final String visited_sql = 
-                "UPDATE scheduling" +
-                "SET state = 3" +
-                "WHERE uri = " + uri.toString() + " AND state = 2 ;";
+                "UPDATE scheduling " +
+                "SET state = 3 " +
+                "WHERE uri = '" + uri.toString() + "' AND state = 2 ;";
         
         try {
-            if (exec_update(visited_sql) != 1) {
+            System.err.println("VISIT " + uri.toString());
+            
+            if (execUpdate(visited_sql) != 1) {
                 Logger.getLogger(PostgresScheduler.class.getName()).log(Level.WARNING, "No such uri in 'processing' state");
             }
         } catch (SQLException ex) {
@@ -127,26 +151,37 @@ public class PostgresScheduler implements URIServer {
     private void create_table() {
         
         final String create_table_sql = 
-                "CREATE TABLE scheduling (" +
-                "   uri VARCHAR(128) PRIMARY KEY," +
-                "   state INT" +
+                "CREATE TABLE scheduling ( " +
+                "   uri VARCHAR(128) PRIMARY KEY, " +
+                "   state INT " +
                 ");";
         
         final String clean_table_sql = 
-                "UPDATE scheduling" +
-                "SET state = 1" +
+                "UPDATE scheduling " +
+                "SET state = 1 " +
                 "WHERE state = 2 ;";
         
         try {
-            exec_update(create_table_sql);
-            exec_update(clean_table_sql);
+            System.err.println("Creating scheduling relation...");
+            execUpdate(create_table_sql);
+            System.err.println("    => DONE");
+            
+        } catch (SQLException ex) {
+            System.err.println("    => Table probably already exists");
+        }
+        
+        try {
+            System.err.println("Cleaning scheduling relation...");
+            execUpdate(clean_table_sql);
+            System.err.println("    => DONE");
         } catch (SQLException ex) {
             Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            System.exit(1);
         }
         
     }
     
-    private int exec_update(String sql) throws SQLException {
+    private int execUpdate(String sql) throws SQLException {
         Connection conn = null;
         Statement stmt = null;
         
@@ -156,23 +191,8 @@ public class PostgresScheduler implements URIServer {
             return stmt.executeUpdate(sql);
         }
         finally {
-            stmt.close();
-            conn.close();
-        }
-    }
-    
-    private ResultSet exec_query(String sql) throws SQLException {
-        Connection conn = null;
-        Statement stmt = null;
-        
-        try {
-            conn = ds.getConnection();
-            stmt = conn.createStatement();
-            return stmt.executeQuery(sql);
-        }
-        finally {
-            stmt.close();
-            conn.close();
+            if (stmt != null) stmt.close();
+            if (conn != null) conn.close();
         }
     }
     

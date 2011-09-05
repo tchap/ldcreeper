@@ -44,9 +44,9 @@ public class TDBScheduler implements URIServer {
     private final RDFNode processing;
     private final RDFNode visited;
     
-    private final Object submitted_cond;
+    private final Object submitted_cond = new Object();
     
-    private final Object rw_cond;
+    private final Object rw_cond = new Object();
     private int writers_count;
     private int readers_count;
     
@@ -61,9 +61,6 @@ public class TDBScheduler implements URIServer {
         submitted = sched_model.createLiteral("submitted");
         processing = sched_model.createLiteral("being_processed");
         visited = sched_model.createLiteral("visited");
-        
-        submitted_cond = new Object();
-        rw_cond = new Object();
         
         cleanup();
         

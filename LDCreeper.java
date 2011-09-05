@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.sql.DataSource;
 import ldcreeper.mining.MinerPool;
 import ldcreeper.mining.Pipeline;
 import ldcreeper.model.create.ContentTypeModelCreator;
@@ -32,8 +33,9 @@ import ldcreeper.model.filter.ModelFilter;
 import ldcreeper.model.filter.SPARQLFilter;
 import ldcreeper.model.store.NamedModelStore;
 import ldcreeper.model.store.TDBModelStore;
-import ldcreeper.scheduling.TDBScheduler;
+import ldcreeper.scheduling.PostgresScheduler;
 import ldcreeper.scheduling.URIServer;
+import org.postgresql.ds.PGPoolingDataSource;
 
 
 /**
@@ -76,9 +78,10 @@ public class LDCreeper {
                 "}"
                 ;
 
-        
-        URIServer server = new TDBScheduler(tdb_path);
-        
+        /*
+         * URIServer server = new TDBScheduler(tdb_path);
+         */
+        URIServer server = new PostgresScheduler(deployPostgresDataSource());
         
         ModelCreator creator = new ContentTypeModelCreator();
         
@@ -108,5 +111,25 @@ public class LDCreeper {
         miners.start();
         miners.join();
     
+    }
+    
+    static DataSource deployPostgresDataSource() {
+        /*
+         * TODO: Do not write this in plain source file
+         */
+        final String db_user = "ldcreeper";
+        final String db_passwd = "ldcreeper_supersecret_passwd";
+        final String db_name = "ldcreeper_db";
+        final String pool_path = "jdbc/postgres/pool/ldcreeper";
+        
+        
+        PGPoolingDataSource ds = new PGPoolingDataSource();
+        
+        ds.setDataSourceName(pool_path);
+        ds.setUser(db_user);
+        ds.setPassword(db_passwd);
+        ds.setDatabaseName(db_name);
+        
+        return ds;
     }
 }
