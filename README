@@ -3,4 +3,4 @@ Contact: ondra DOT cap AT gmail DOT com
 LDCreeper is built on top of Jena framework for Semantic Web applications.
 Jena is not distributed along with LDCreeper, you have to link it yourself.
 
-Tested with TDB 0.8.10
+Tested with TDB 0.8.10, PostgreSQL 8.4 (postgresql-9.0-801.jdbc4.jar driver).

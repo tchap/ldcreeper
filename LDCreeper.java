@@ -48,14 +48,14 @@ public class LDCreeper {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        String starting_point = "http://dig.csail.mit.edu/2008/webdav/timbl/foaf.rdf";
-        String tdb_path = "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB/";
+        final String starting_point = "http://dig.csail.mit.edu/2008/webdav/timbl/foaf.rdf";
+        final String tdb_path = "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB/";
         
 
         /*
          * TODO: Read queries from a file
          */
-        String extractor_select = 
+        final String extractor_select = 
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
                 "PREFIX owl: <http://www.w3.org/2002/07/owl#>" +
                 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
@@ -70,7 +70,7 @@ public class LDCreeper {
         /*
          * TODO: Rewrite query to mine something more useful
          */
-        String friend_construct = 
+        final String friend_construct = 
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
                 "CONSTRUCT { ?person foaf:knows ?friend }" + 
                 "WHERE { " + 
@@ -93,7 +93,7 @@ public class LDCreeper {
         
         Pipeline pipeline = new Pipeline(creator, extractor, filter, store);
         
-        MinerPool miners = new MinerPool(server, pipeline, 1);
+        MinerPool miners = new MinerPool(server, pipeline, 4);
         
        
         URI starting_uri = null;
