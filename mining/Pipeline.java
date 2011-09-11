@@ -35,7 +35,7 @@ public class Pipeline implements Runnable, Cloneable {
     private final ModelFilter filter;
     private final NamedModelStore store;
     
-    protected URI uric;
+    protected URI uri;
 
     public Pipeline(ModelCreator creator, URIExtractor extractor, ModelFilter filter, NamedModelStore store) {
         this.creator = creator;
@@ -44,17 +44,17 @@ public class Pipeline implements Runnable, Cloneable {
         this.store = store;
     }
     
-    public void setURI(URI uric) {
-        this.uric = uric;
+    public void setURI(URI uri) {
+        this.uri = uri;
     }
     
     @Override
     public void run() {
-        if (uric == null) {
-            throw new NullPointerException("URI Context not set");
+        if (uri == null) {
+            throw new NullPointerException("URI not set");
         }
         
-        Model model = creator.createFromURI(uric);
+        Model model = creator.createFromURI(uri);
         
         if (model == null) {
             return;
@@ -68,7 +68,7 @@ public class Pipeline implements Runnable, Cloneable {
             return;
         }
         
-        store.storeNamedModel(model, uric.toString());
+        store.storeNamedModel(model, uri.toString());
     }
 
     @Override
