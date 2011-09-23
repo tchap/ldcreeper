@@ -18,11 +18,17 @@
 package ldcreeper;
 
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
+import ldcreeper.argparse.ArgParser;
+import ldcreeper.argparse.DBConnectionArgs;
+import ldcreeper.argparse.Parameter;
 import ldcreeper.mining.MinerPool;
 import ldcreeper.mining.Pipeline;
 import ldcreeper.model.create.ContentTypeModelCreator;
@@ -44,52 +50,66 @@ import org.postgresql.ds.PGPoolingDataSource;
  */
 public class LDCreeper {
 
+    @Parameter(names={"-t", "-threads"}, 
+               description="Number of threads to start")
+    private static Integer threadCount = 4;
+    
+    @Parameter(names="-tdb", 
+               description="Directory path for tdb files to be used for " + 
+                    "making downloaded models persistent")
+    private static File tdb_path = null;
+    
+    @Parameter(names="-postgres",
+               description="Specification of PostgreSQL DB connection " + 
+                    "to be used for making URI pool persistent")
+    private static DBConnectionArgs db_args = null;
+    
+    @Parameter(names={"-s", "-select-query"}, 
+               description="Path to a file containing SPARQL SELECT query " +
+                    "to be used for getting new links from models fetched", 
+               required=true)
+    private static List<String> extractor_files = new ArrayList<String>();
+    
+    @Parameter(names={"-c", "-construct-query"},
+               description="Path to a file containing SPARQL CONSTRUCT query " +
+                    "to be used for building models being saved")
+    private static List<String> miner_files = new ArrayList<String>();
+    
+    
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         final String starting_point = "http://dig.csail.mit.edu/2008/webdav/timbl/foaf.rdf";
-        final String tdb_path = "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB/";
         
 
-        /*
-         * TODO: Read queries from a file
-         */
-        final String extractor_select = 
-                "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
-                "PREFIX owl: <http://www.w3.org/2002/07/owl#>" +
-                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
-                "SELECT DISTINCT ?person ?sameas ?seealso" +
-                "WHERE { " + 
-                "   ?person a foaf:Person . " +
-                "   OPTIONAL { ?person owl:sameAs ?sameas . }" +
-                "   OPTIONAL { ?person rdfs:seeAlso ?seealso . }" +
-                "}"
-                ;
+        String[] argz = {
+            "-t",           "5",
+            "-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB",
+            "-postgres",    "ldcreeper:ldcreeper_db",
+            "-s",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/select.sparql",
+            "-c",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/construct.sparql"
+        };
         
-        /*
-         * TODO: Rewrite query to mine something more useful
-         */
-        final String friend_construct = 
-                "PREFIX foaf: <http://xmlns.com/foaf/0.1/>" +
-                "CONSTRUCT { ?person foaf:knows ?friend }" + 
-                "WHERE { " + 
-                "   ?person foaf:knows ?friend ." +
-                "}"
-                ;
-
-        /*
-         * URIServer server = new TDBScheduler(tdb_path);
-         */
+        
+        ArgParser arg_parser = new ArgParser();
+        
+        arg_parser.addParametersFrom(LDCreeper.class);
+        arg_parser.parse(argz);
+        
+        
         URIServer server = new PostgresScheduler(deployPostgresDataSource());
         
         ModelCreator creator = new ContentTypeModelCreator();
+        
+        String extractor_select = "";
+        String friend_construct = "";
         
         URIExtractor extractor = new SPARQLExtractor(server, extractor_select, null);
         
         ModelFilter filter = new SPARQLFilter(friend_construct, null);
         
-        NamedModelStore store = new TDBModelStore(tdb_path);
+        NamedModelStore store = new TDBModelStore(tdb_path.getAbsolutePath());
         
         Pipeline pipeline = new Pipeline(creator, extractor, filter, store);
         
