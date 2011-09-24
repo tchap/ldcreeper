@@ -18,19 +18,18 @@
 package ldcreeper.argparse;
 
 
-import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import ldcreeper.argparse.converters.Converter;
-import ldcreeper.argparse.converters.DBConnectionArgsConverter;
-import ldcreeper.argparse.converters.DoubleConverter;
-import ldcreeper.argparse.converters.FileConverter;
-import ldcreeper.argparse.converters.FloatConverter;
-import ldcreeper.argparse.converters.IntegerConverter;
-import ldcreeper.argparse.converters.LongConverter;
-import ldcreeper.argparse.converters.StringConverter;
+import ldcreeper.argparse.converters.ConverterFactory;
 import ldcreeper.argparse.exceptions.ArgParseException;
+import ldcreeper.argparse.exceptions.ConversionException;
 
 
 
@@ -40,7 +39,15 @@ import ldcreeper.argparse.exceptions.ArgParseException;
  */
 public class ArgParser {
 
-    private static class ParameterRecord {
+    private void help(String string) {
+        /*
+         * TODO: Print help
+         */
+        System.err.println(string);
+        System.exit(1);
+    }
+
+    private class ParameterRecord {
         
         private Parameter parameter;
         private Object object;
@@ -66,54 +73,15 @@ public class ArgParser {
         
     }
     
-    private ConverterFactory cfactory;
     private Map<String, ParameterRecord> parameters = new HashMap<String, ParameterRecord>();
     private ParameterRecord main_args = null;
     
-    public ArgParser() {
-        
-        cfactory = new ConverterFactory() {
-
-            @Override
-            public Converter<?> converterForClass(Class cls) {
-                if (cls.equals(Integer.class)) {
-                    return new IntegerConverter();
-                }
-                else if (cls.equals(Long.class)) {
-                    return new LongConverter();
-                }
-                else if (cls.equals(Float.class)) {
-                    return new FloatConverter();
-                }
-                else if (cls.equals(Double.class)) {
-                    return new DoubleConverter();
-                }
-                else if (cls.equals(String.class)) {
-                    return new StringConverter();
-                }
-                else if (cls.equals(DBConnectionArgs.class)) {
-                    return new DBConnectionArgsConverter();
-                }
-                else if (cls.equals(File.class)) {
-                    return new FileConverter();
-                }
-                else {
-                    return null;
-                }    
-            }
-        };
-        
-    }
     
     private void addParametersFrom(Class<?> cls, Object obj) {
         Field[] fields = cls.getDeclaredFields();
         
-        System.out.println(Integer.toString(fields.length));
-        
         for (Field field : fields) {
             Parameter param;
-            
-            System.out.println(field.toString());
             
             if ((param = field.getAnnotation(Parameter.class)) != null) {
                 if (param.names().length != 0) {
@@ -137,48 +105,89 @@ public class ArgParser {
     }
     
     private void addParameter(String name, Parameter p, Object o, Field f) {
-        if (name == null) {
-            setMainArgumentsRecord(p, o, f);
-            return;
-        }
-        
         if (parameters.put(name, new ParameterRecord(p, o, f)) != null) {
             throw new ArgParseException("Multiple parameters with the same name");
-        }
-    } 
-    
-    private void setMainArgumentsRecord(Parameter p, Object o, Field f) {
-        if (main_args == null) {
-            if (!f.getGenericType().toString().equals("java.util.List<java.lang.String>")) {
-                throw new ArgParseException("Exact type of List<String> " + 
-                        "required for main arguments");
-            }
-            
-            main_args = new ParameterRecord(p, o, f);
-        }
-        else {
-            throw new ArgParseException("List for main arguments already set" +
-                    "('names' skipped multiple times)");
         }
     }
     
     public void parse(String[] args) {
+        /*
+         * state 0 -> expecting option
+         * state 1 -> expecting value
+         */
+        int state = 0;
+        String parameter = "";
+        ParameterRecord rec = null;
         
-    }
-    
-    public void dump() {
-        for (ParameterRecord rec : parameters.values()) {
-            System.out.println("======================");
-            System.out.print("Parameter: [ ");
-            
-            for (String name : rec.getParameter().names()) {
-                System.out.print(name + ", ");
+        for (String arg : args) {
+            if (state == 0) {
+                if ((rec = parameters.get(arg)) == null) {
+                    help("Unknown option: " + arg);
+                }
+                
+                parameter = arg;
+                state = 1;
             }
-            
-            System.out.println("]");
-            System.out.println("Object: " + rec.getObject());
-            System.out.println("Field: " + rec.getField());
-            System.out.println("======================");
+            else {
+                Field field = rec.getField();
+                field.setAccessible(true);
+                
+                Object instance = rec.getObject();
+                
+                Class<?> cls = field.getType();
+                
+                if (cls.equals(List.class)) {
+                    try {
+                        Object list = field.get(instance);
+                        
+                        Class<?>[] params = {Object.class};
+                        Method add = list.getClass().getDeclaredMethod("add", params);
+
+                        add.invoke(list, arg);
+                    }
+                    catch (NoSuchMethodException ex) {
+                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (SecurityException ex) {
+                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IllegalAccessException ex) {
+                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IllegalArgumentException ex) {
+                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (InvocationTargetException ex) {
+                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
+                    }                    
+                }
+                else {
+                    Converter<?> converter = ConverterFactory.converterForClass(cls);
+
+                    if (converter == null) {
+                        throw new ConversionException("Converter not found for " 
+                                + cls.toString());
+                    }
+                    
+                    try {
+                        if (field.get(instance) != null) {
+                            throw new ArgParseException("Parameter " + 
+                                    parameter + " specified multiple times");
+                        }
+                        
+                        field.set(instance, converter.convert(arg));
+                    } catch (IllegalArgumentException ex) {
+                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IllegalAccessException ex) {
+                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    
+                }
+  
+                
+                state = 0;
+            }
+        }
+        
+        if (state == 1) {
+            help("Argument expected after: " + args[-1]);
         }
     }
+    
 }

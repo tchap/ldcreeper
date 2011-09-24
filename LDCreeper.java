@@ -24,6 +24,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -72,8 +73,7 @@ public class LDCreeper {
     
     @Parameter(names={"-s", "-select-query"}, 
                description="Path to a file containing SPARQL SELECT query " +
-                    "to be used for getting new links from models fetched", 
-               required=true)
+                    "to be used for getting new links from models fetched")
     private static List<String> extractor_files = new ArrayList<String>();
     
     @Parameter(names={"-c", "-construct-query"},
@@ -101,6 +101,7 @@ public class LDCreeper {
         ArgParser arg_parser = new ArgParser();
         
         arg_parser.addParametersFrom(LDCreeper.class);
+        
         arg_parser.parse(argz);
         
         
@@ -132,11 +133,17 @@ public class LDCreeper {
         server.submitURI(starting_uri);
         
         
-        System.out.println("\nWaiting 10 seconds before starting...\n");
+        System.out.print("\nStarting in ");
         
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException ex) {}
+        for (int i = 10; i > 0; --i) {
+            System.out.print(Integer.toString(i) + " ");
+            
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {}
+        }
+        
+        System.out.println("GO!\n");
         
         
         miners.start();
@@ -182,15 +189,24 @@ public class LDCreeper {
                 
                 extractor = new SPARQLExtractor(server, sparql, extractor);
             } catch (IOException ex) {
-                Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, null, ex);
-                System.err.println("WARNING: Skipping SPARQL query from file " + path);
+                System.err.print("WARNING: Skipping SPARQL query ");
+                
+                if (!extractor_file.exists()) {
+                    System.err.println("(file " + path + " does not exist)");
+                }
+                else if (!extractor_file.canRead()) {
+                    System.err.println("(file " + path + " not readable)");
+                }
+                else {
+                    System.err.println("(unknown I/O error)");
+                }
             }            
         }
         
         if (extractor == null) {
             System.err.println("WARNING: No SPARQL URI Extractor created, " + 
-                    "using default (extract all links)");
-            return new EveryURIExtractor(null);
+                    "using default (extract all URIs)");
+            return new EveryURIExtractor(server, null);
         }
         
         return extractor;
@@ -216,8 +232,17 @@ public class LDCreeper {
                 
                 filter = new SPARQLFilter(sparql, filter);
             } catch (IOException ex) {
-                Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, null, ex);
-                System.err.println("WARNING: Skipping SPARQL query from file " + path);
+                System.err.print("WARNING: Skipping SPARQL query ");
+                
+                if (!extractor_file.exists()) {
+                    System.err.println("(file " + path + " does not exist)");
+                }
+                else if (!extractor_file.canRead()) {
+                    System.err.println("(file " + path + " not readable)");
+                }
+                else {
+                    System.err.println("(unknown I/O error)");
+                }
             }            
         }
         

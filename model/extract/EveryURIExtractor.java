@@ -18,6 +18,12 @@
 package ldcreeper.model.extract;
 
 import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
+import java.net.URI;
+import java.net.URISyntaxException;
+import ldcreeper.scheduling.URIServer;
 
 /**
  *
@@ -25,13 +31,42 @@ import com.hp.hpl.jena.rdf.model.Model;
  */
 public class EveryURIExtractor extends URIExtractor {
 
-    public EveryURIExtractor(URIExtractor next_extractor) {
+    private final URIServer server;
+    
+    public EveryURIExtractor(URIServer server, URIExtractor next_extractor) {
         super(next_extractor);
+        this.server = server;
     }
 
     @Override
     protected void extractFrom(Model model) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StmtIterator iter = model.listStatements();
+        
+        while (iter.hasNext()) {
+            Statement stmt = iter.nextStatement();
+            
+            URI uri;
+            
+            
+            Resource subj = stmt.getSubject();
+            
+            if (subj.isURIResource()) {    
+                try {
+                    uri = new URI(subj.getURI());
+                    server.submitURI(uri);
+                } catch (URISyntaxException ex) {}
+            }
+            
+            
+            Resource obj = stmt.getObject().asResource();
+            
+            if (obj.isURIResource()) {
+                try {
+                    uri = new URI(obj.asResource().getURI());
+                    server.submitURI(uri);
+                } catch (URISyntaxException ex) {}
+            }
+        }
     }
     
 }

@@ -31,12 +31,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Parameter {
     
-    String[] names() default {};
+    String[] names();
     
     String description() default "";
-    
-    int arity() default -1;
-    
-    boolean required() default false;
 
 }

@@ -58,7 +58,7 @@ public class DBConnectionArgs {
         System.out.println("Password (" + db_username + ":" + db_name + "@" +
                 db_host + ":" + Integer.toString(db_port) + "):");
         
-        return "";
+        return "ldcreeper_supersecret_passwd";
     }
 
     public String getDBHost() {
