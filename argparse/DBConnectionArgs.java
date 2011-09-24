@@ -57,7 +57,9 @@ public class DBConnectionArgs {
     private String ask_for_password() {
         System.out.println("Password (" + db_username + ":" + db_name + "@" +
                 db_host + ":" + Integer.toString(db_port) + "):");
-        
+        /*
+         * TODO: Ask user
+         */
         return "ldcreeper_supersecret_passwd";
     }
 
