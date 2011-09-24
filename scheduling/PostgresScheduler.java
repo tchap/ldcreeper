@@ -72,6 +72,10 @@ public class PostgresScheduler implements URIServer {
         try {    
             execUpdate(submit_sql);
             System.err.println("SUBMIT " + uri.toString());
+            
+            synchronized (cond) {
+                cond.notify();
+            }
         } catch (SQLException ex) {
             if (ex.getSQLState().equals(UNIQUE_VIOLATION)) {
                 System.err.println("SKIP " + uri.toString());

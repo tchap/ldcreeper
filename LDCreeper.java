@@ -18,14 +18,16 @@
 package ldcreeper;
 
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.sql.DataSource;
 import ldcreeper.argparse.ArgParser;
 import ldcreeper.argparse.DBConnectionArgs;
 import ldcreeper.argparse.Parameter;
@@ -33,13 +35,17 @@ import ldcreeper.mining.MinerPool;
 import ldcreeper.mining.Pipeline;
 import ldcreeper.model.create.ContentTypeModelCreator;
 import ldcreeper.model.create.ModelCreator;
+import ldcreeper.model.extract.EveryURIExtractor;
 import ldcreeper.model.extract.SPARQLExtractor;
 import ldcreeper.model.extract.URIExtractor;
 import ldcreeper.model.filter.ModelFilter;
+import ldcreeper.model.filter.NullFilter;
 import ldcreeper.model.filter.SPARQLFilter;
 import ldcreeper.model.store.NamedModelStore;
+import ldcreeper.model.store.SimpleModelStore;
 import ldcreeper.model.store.TDBModelStore;
 import ldcreeper.scheduling.PostgresScheduler;
+import ldcreeper.scheduling.SimpleScheduler;
 import ldcreeper.scheduling.URIServer;
 import org.postgresql.ds.PGPoolingDataSource;
 
@@ -52,12 +58,12 @@ public class LDCreeper {
 
     @Parameter(names={"-t", "-threads"}, 
                description="Number of threads to start")
-    private static Integer threadCount = 4;
+    private static Integer thread_count = 4;
     
     @Parameter(names="-tdb", 
                description="Directory path for tdb files to be used for " + 
                     "making downloaded models persistent")
-    private static File tdb_path = null;
+    private static String tdb_path = null;
     
     @Parameter(names="-postgres",
                description="Specification of PostgreSQL DB connection " + 
@@ -98,22 +104,20 @@ public class LDCreeper {
         arg_parser.parse(argz);
         
         
-        URIServer server = new PostgresScheduler(deployPostgresDataSource());
-        
         ModelCreator creator = new ContentTypeModelCreator();
+          
+        URIServer server = getURIServer();
         
-        String extractor_select = "";
-        String friend_construct = "";
+        URIExtractor extractor = getURIExtractor(server);
         
-        URIExtractor extractor = new SPARQLExtractor(server, extractor_select, null);
+        ModelFilter filter = getModelFilter();
         
-        ModelFilter filter = new SPARQLFilter(friend_construct, null);
+        NamedModelStore store = getModelStore();
         
-        NamedModelStore store = new TDBModelStore(tdb_path.getAbsolutePath());
         
         Pipeline pipeline = new Pipeline(creator, extractor, filter, store);
         
-        MinerPool miners = new MinerPool(server, pipeline, 4);
+        MinerPool miners = new MinerPool(server, pipeline, thread_count);
         
        
         URI starting_uri = null;
@@ -128,28 +132,113 @@ public class LDCreeper {
         server.submitURI(starting_uri);
         
         
+        System.out.println("\nWaiting 10 seconds before starting...\n");
+        
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException ex) {}
+        
+        
         miners.start();
         miners.join();
     
     }
     
-    static DataSource deployPostgresDataSource() {
-        /*
-         * TODO: Do not write this in plain source file
-         */
-        final String db_user = "ldcreeper";
-        final String db_passwd = "ldcreeper_supersecret_passwd";
-        final String db_name = "ldcreeper_db";
-        final String pool_path = "jdbc/postgres/pool/ldcreeper";
-        
-        
-        PGPoolingDataSource ds = new PGPoolingDataSource();
-        
-        ds.setDataSourceName(pool_path);
-        ds.setUser(db_user);
-        ds.setPassword(db_passwd);
-        ds.setDatabaseName(db_name);
-        
-        return ds;
+    private static URIServer getURIServer() {
+        if (db_args == null) {
+            System.err.println("WARNING: No database " + 
+                    "for URI Server specified, using in-memory URI Server...");
+            return new SimpleScheduler();
+        }
+        else {
+            PGPoolingDataSource ds = new PGPoolingDataSource();
+
+            ds.setDataSourceName("jdbc/postgres/pool/ldcreeper");
+            ds.setUser(db_args.getDBUsername());
+            ds.setPassword(db_args.getDBPassword());
+            ds.setDatabaseName(db_args.getDBName());
+            
+            return new PostgresScheduler(ds);
+        }
     }
+
+    private static URIExtractor getURIExtractor(URIServer server) {
+        URIExtractor extractor = null;
+        
+        for (String path : extractor_files) {
+            File extractor_file = new File(path);
+
+            String sparql = "";
+
+            BufferedReader reader = null;
+            String line;
+
+            try {
+                reader = new BufferedReader(new FileReader(extractor_file));
+                
+                while ((line = reader.readLine()) != null) {
+                    sparql += line;
+                }
+                
+                extractor = new SPARQLExtractor(server, sparql, extractor);
+            } catch (IOException ex) {
+                Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, null, ex);
+                System.err.println("WARNING: Skipping SPARQL query from file " + path);
+            }            
+        }
+        
+        if (extractor == null) {
+            System.err.println("WARNING: No SPARQL URI Extractor created, " + 
+                    "using default (extract all links)");
+            return new EveryURIExtractor(null);
+        }
+        
+        return extractor;
+    }
+
+    private static ModelFilter getModelFilter() {
+        ModelFilter filter = null;
+        
+        for (String path : miner_files) {
+            File extractor_file = new File(path);
+
+            String sparql = "";
+
+            BufferedReader reader = null;
+            String line;
+
+            try {
+                reader = new BufferedReader(new FileReader(extractor_file));
+                
+                while ((line = reader.readLine()) != null) {
+                    sparql += line;
+                }
+                
+                filter = new SPARQLFilter(sparql, filter);
+            } catch (IOException ex) {
+                Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, null, ex);
+                System.err.println("WARNING: Skipping SPARQL query from file " + path);
+            }            
+        }
+        
+        if (filter == null) {
+            System.err.println("WARNING: No Model Filter created, " + 
+                    "using default (no filtering)");
+            return new NullFilter(null);
+        }
+        
+        return filter;
+    }
+
+    private static NamedModelStore getModelStore() {
+        if (tdb_path == null) {
+            System.err.println("WARNING: No TDB directory " + 
+                    "for Model Store specified, using stdout...");
+            return new SimpleModelStore();
+        }
+        else {
+            return new TDBModelStore(tdb_path);
+        }
+    }
+    
 }
