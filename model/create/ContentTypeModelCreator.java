@@ -48,7 +48,6 @@ public class ContentTypeModelCreator implements ModelCreator {
         try {
             return createFromURI(new URI(uri));
         } catch (URISyntaxException ex) {
-            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.INFO, null, ex);
             return null;
         }
        
@@ -61,10 +60,12 @@ public class ContentTypeModelCreator implements ModelCreator {
         try {
             conn = uri.toURL().openConnection();
         } catch (MalformedURLException ex) {
-            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.INFO, null, ex);
+            Logger.getLogger("ldcreeper").log(Level.INFO, 
+                    "Malformed URL exception", ex);
             return null;
         } catch (IOException ex) {
-            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.WARNING, null, ex);
+            Logger.getLogger("ldcreeper").log(Level.WARNING, 
+                    "I/O exception", ex);
             return null;
         }
         
@@ -81,7 +82,8 @@ public class ContentTypeModelCreator implements ModelCreator {
         try {
             model.read(conn.getInputStream(), uri.toString(), lang);
         } catch (IOException ex) {
-            Logger.getLogger(ContentTypeModelCreator.class.getName()).log(Level.WARNING, null, ex);
+            Logger.getLogger("ldcreeper").log(Level.WARNING, 
+                    "I/O exception", ex);
             return null;
         }
         

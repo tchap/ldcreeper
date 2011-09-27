@@ -39,12 +39,168 @@ import ldcreeper.argparse.exceptions.ConversionException;
  */
 public class ArgParser {
 
-    private void help(String string) {
+    private final Map<String, ParameterRecord> parameters = 
+            new HashMap<String, ParameterRecord>();
+    
+    private final Map<String, ParameterRecord> switch_parameters =
+            new HashMap<String, ParameterRecord>();
+    
+    private String help_string = 
+            "Usage: java -jar <ldcreeper jar> [ OPTION... ]\n" + 
+            "where OPTION is one of:\n";
+   
+    
+    private void addParametersFrom(Class<?> cls, Object obj) {
+        Field[] fields = cls.getDeclaredFields();
+        
+        for (Field field : fields) {
+            Parameter param;
+            
+            if ((param = field.getAnnotation(Parameter.class)) != null) {
+                if (param.names().length != 0) {
+                    String help_line = "\t%-30s %s\n";
+                    String names_str = "";
+                    
+                    for (String name : param.names()) {
+                        if (field.getType().equals(Boolean.class)) {
+                            addSwitchParameter(name, param, obj, field);
+                        }
+                        else {
+                            addParameter(name, param, obj, field);
+                        }
+                        
+                        names_str += name + ", ";
+                    }
+                    
+                    names_str = names_str.substring(0, names_str.length() - 2);
+                    
+                    if (!field.getType().equals(Boolean.class)) {
+                        names_str += " VALUE";
+                    }
+                    
+                    help_string += String.format(help_line, 
+                            names_str, param.description());
+                }
+                else {
+                    throw new ArgParseException("Parameter names empty for " +
+                            "field " + field.toString());
+                }
+            }
+        }
+    }
+    
+    public void addParametersFrom(Object obj) {
+        addParametersFrom(obj.getClass(), obj);
+    }
+    
+    public void addParametersFrom(Class<?> cls) {
+        addParametersFrom(cls, cls);
+    }
+    
+    private void addParameter(String name, Parameter p, Object o, Field f) {
+        if (parameters.put(name, new ParameterRecord(p, o, f)) != null) {
+            throw new ArgParseException("Multiple parameters with " + 
+                    "the same name: " + name);
+        }
+    }
+    
+    private void addSwitchParameter(String name, Parameter p, Object o, Field f) {
+        if (switch_parameters.put(name, new ParameterRecord(p, o, f)) != null) {
+            throw new ArgParseException("Multiple parameters with " + 
+                    "the same name: " + name);
+        }
+    }
+    
+    public void parse(String[] args) {
+        if (args.length == 0) {
+            help(null);
+        }
+        
         /*
-         * TODO: Print help
+         * state 0 -> expecting option
+         * state 1 -> expecting value
          */
-        System.err.println(string);
-        System.exit(1);
+        int state = 0;
+        
+        String parameter;
+        ParameterRecord rec = null;
+        
+        for (String arg : args) {
+            if (state == 0) {
+                if (arg.equals("-h") || arg.equals("-help")) {
+                    help(null);
+                }
+                
+                if ((rec = switch_parameters.get(arg)) != null) {
+                    setField(rec.getField(), rec.getObject(), "");
+                }
+                else if ((rec = parameters.get(arg)) != null) {
+                    parameter = arg;
+                    state = 1;
+                }
+                else {
+                    help("Unknown parameter: " + arg);
+                }
+            }
+            else {
+                setField(rec.getField(), rec.getObject(), arg);
+                state = 0;
+            }
+        }
+        
+        if (state == 1) {
+            help("Argument expected after " + args[-1]);
+        }
+    }
+    
+    private void setField(Field field, Object instance, Object value) {
+        field.setAccessible(true);
+        
+        Class<?> cls = field.getType();
+
+        if (cls.equals(List.class)) {
+            try {
+                Object list = field.get(instance);
+
+                Class<?>[] params = { Object.class };
+                Method add = list.getClass().getDeclaredMethod("add", params);
+
+                add.invoke(list, value);
+            }
+            catch (Exception ex) {
+                Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, 
+                        "Reflection exception", ex);
+                System.exit(1);
+            }                  
+        }
+        else {
+            Converter<?> converter = ConverterFactory.converterForClass(cls);
+
+            if (converter == null) {
+                throw new ConversionException("Converter not found for " 
+                        + cls.toString());
+            }
+
+            try {
+                field.set(field.get(instance), converter.convert((String)value));
+            } catch (Exception ex) {
+                Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, 
+                        "Reflection exception", ex);
+                System.exit(1);
+            } 
+        }
+    }
+    
+    private void help(String str) {
+        if (str == null) {
+            System.out.println(help_string);
+            System.exit(0);
+        }
+        else {
+            System.err.println(str);
+            System.out.println(help_string);
+            System.exit(1);
+        }
     }
 
     private class ParameterRecord {
@@ -71,123 +227,6 @@ public class ArgParser {
             return parameter;
         }
         
-    }
-    
-    private Map<String, ParameterRecord> parameters = new HashMap<String, ParameterRecord>();
-    private ParameterRecord main_args = null;
-    
-    
-    private void addParametersFrom(Class<?> cls, Object obj) {
-        Field[] fields = cls.getDeclaredFields();
-        
-        for (Field field : fields) {
-            Parameter param;
-            
-            if ((param = field.getAnnotation(Parameter.class)) != null) {
-                if (param.names().length != 0) {
-                    for (String name : param.names()) {
-                        addParameter(name, param, obj, field);
-                    }
-                }
-                else {
-                    addParameter(null, param, obj, field);
-                }
-            }
-        }
-    }
-    
-    public void addParametersFrom(Object obj) {
-        addParametersFrom(obj.getClass(), obj);
-    }
-    
-    public void addParametersFrom(Class<?> cls) {
-        addParametersFrom(cls, cls);
-    }
-    
-    private void addParameter(String name, Parameter p, Object o, Field f) {
-        if (parameters.put(name, new ParameterRecord(p, o, f)) != null) {
-            throw new ArgParseException("Multiple parameters with the same name");
-        }
-    }
-    
-    public void parse(String[] args) {
-        /*
-         * state 0 -> expecting option
-         * state 1 -> expecting value
-         */
-        int state = 0;
-        String parameter = "";
-        ParameterRecord rec = null;
-        
-        for (String arg : args) {
-            if (state == 0) {
-                if ((rec = parameters.get(arg)) == null) {
-                    help("Unknown option: " + arg);
-                }
-                
-                parameter = arg;
-                state = 1;
-            }
-            else {
-                Field field = rec.getField();
-                field.setAccessible(true);
-                
-                Object instance = rec.getObject();
-                
-                Class<?> cls = field.getType();
-                
-                if (cls.equals(List.class)) {
-                    try {
-                        Object list = field.get(instance);
-                        
-                        Class<?>[] params = {Object.class};
-                        Method add = list.getClass().getDeclaredMethod("add", params);
-
-                        add.invoke(list, arg);
-                    }
-                    catch (NoSuchMethodException ex) {
-                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (SecurityException ex) {
-                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (IllegalAccessException ex) {
-                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (IllegalArgumentException ex) {
-                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (InvocationTargetException ex) {
-                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
-                    }                    
-                }
-                else {
-                    Converter<?> converter = ConverterFactory.converterForClass(cls);
-
-                    if (converter == null) {
-                        throw new ConversionException("Converter not found for " 
-                                + cls.toString());
-                    }
-                    
-                    try {
-                        if (field.get(instance) != null) {
-                            throw new ArgParseException("Parameter " + 
-                                    parameter + " specified multiple times");
-                        }
-                        
-                        field.set(instance, converter.convert(arg));
-                    } catch (IllegalArgumentException ex) {
-                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (IllegalAccessException ex) {
-                        Logger.getLogger(ArgParser.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    
-                }
-  
-                
-                state = 0;
-            }
-        }
-        
-        if (state == 1) {
-            help("Argument expected after: " + args[-1]);
-        }
     }
     
 }

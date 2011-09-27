@@ -49,6 +49,9 @@ public class ConverterFactory {
         else if (cls.equals(File.class)) {
             return new FileConverter();
         }
+        else if (cls.equals(Boolean.class)) {
+            return new BooleanConverter();
+        }
         else {
             return null;
         }    

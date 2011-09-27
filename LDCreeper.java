@@ -17,21 +17,29 @@
  */
 package ldcreeper;
 
-
+/*
+ * TODO: Shorten imports
+ */
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import ldcreeper.argparse.ArgParser;
 import ldcreeper.argparse.DBConnectionArgs;
 import ldcreeper.argparse.Parameter;
+import ldcreeper.argparse.exceptions.ArgParseException;
+import ldcreeper.logging.formatters.ConsoleFormatter;
 import ldcreeper.mining.MinerPool;
 import ldcreeper.mining.Pipeline;
 import ldcreeper.model.create.ContentTypeModelCreator;
@@ -47,6 +55,7 @@ import ldcreeper.model.store.SimpleModelStore;
 import ldcreeper.model.store.TDBModelStore;
 import ldcreeper.scheduling.PostgresScheduler;
 import ldcreeper.scheduling.SimpleScheduler;
+import ldcreeper.scheduling.TDBScheduler;
 import ldcreeper.scheduling.URIServer;
 import org.postgresql.ds.PGPoolingDataSource;
 
@@ -57,6 +66,13 @@ import org.postgresql.ds.PGPoolingDataSource;
  */
 public class LDCreeper {
 
+    @Parameter(names="-v", description="Print verbose output to the console")
+    private static Boolean verbose = false;
+    
+    @Parameter(names={"-l", "-logpattern"}, description="Pattern of the logfile " + ""
+            + "as specified by java.util.logging.FileHandler")
+    private static String log_pattern = null;
+    
     @Parameter(names={"-t", "-threads"}, 
                description="Number of threads to start")
     private static Integer thread_count = 4;
@@ -66,7 +82,7 @@ public class LDCreeper {
                     "making downloaded models persistent")
     private static String tdb_path = null;
     
-    @Parameter(names="-postgres",
+    @Parameter(names={"-p", "-postgres"},
                description="Specification of PostgreSQL DB connection " + 
                     "to be used for making URI pool persistent")
     private static DBConnectionArgs db_args = null;
@@ -81,6 +97,7 @@ public class LDCreeper {
                     "to be used for building models being saved")
     private static List<String> miner_files = new ArrayList<String>();
     
+    private static final Logger log = Logger.getLogger("ldcreeper");
     
     /**
      * @param args the command line arguments
@@ -90,22 +107,33 @@ public class LDCreeper {
         
 
         String[] argz = {
+            //"-h",
+            "-v",
             "-t",           "5",
             "-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB",
-            "-postgres",    "ldcreeper:ldcreeper_db",
+            //"-p",           "ldcreeper:ldcreeper_db",
             "-s",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/select.sparql",
-            "-c",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/construct.sparql"
+            "-c",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/construct.sparql",
+            //"-l",           "/"
         };
-        
         
         ArgParser arg_parser = new ArgParser();
         
-        arg_parser.addParametersFrom(LDCreeper.class);
+        try {
+            arg_parser.addParametersFrom(LDCreeper.class);
+            arg_parser.parse(argz);
+        }
+        catch (ArgParseException ex) {
+            Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, 
+                    "Arguments parser error", ex);
+            System.exit(1);
+        }
         
-        arg_parser.parse(argz);
+        
+        initLogger();
         
         
-        ModelCreator creator = new ContentTypeModelCreator();
+        ModelCreator creator = getModelCreator(); 
           
         URIServer server = getURIServer();
         
@@ -126,14 +154,12 @@ public class LDCreeper {
         try {
             starting_uri = new URI(starting_point);
         } catch (URISyntaxException ex) {
-            Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, null, ex);
             return;
         }
         
         server.submitURI(starting_uri);
         
-        
-        System.out.print("\nStarting in ");
+        System.out.print("Starting in ");
         
         for (int i = 10; i > 0; --i) {
             System.out.print(Integer.toString(i) + " ");
@@ -151,10 +177,61 @@ public class LDCreeper {
     
     }
     
+    private static void initLogger() {
+        log.setUseParentHandlers(false);
+        
+        for (Handler handler : log.getHandlers()) {
+            log.removeHandler(handler);
+        }
+        
+        
+        ConsoleHandler console_handler = new ConsoleHandler();
+        console_handler.setFormatter(new ConsoleFormatter());
+        
+        if (verbose) {
+            console_handler.setLevel(Level.ALL);
+        }
+        else {
+            console_handler.setLevel(Level.WARNING);
+        }
+        
+        log.addHandler(console_handler);
+        
+        
+        if (log_pattern != null) {
+            FileHandler file_handler = null;
+            
+            try {
+                file_handler = new FileHandler(log_pattern, 1000, 5);
+            } catch (IOException ex) {
+                log.log(Level.SEVERE, "I/O exception", ex);
+                return;
+            } catch (SecurityException ex) {
+                log.log(Level.SEVERE, "Security exception", ex);
+                return;
+            }
+            
+            file_handler.setLevel(Level.WARNING);
+            log.addHandler(file_handler);
+        }
+        
+        
+        LogManager.getLogManager().addLogger(log);
+    }
+
     private static URIServer getURIServer() {
         if (db_args == null) {
-            System.err.println("WARNING: No database " + 
-                    "for URI Server specified, using in-memory URI Server...");
+            log.warning("No database specified for URI Server, " + 
+                    "trying other solutions");
+            
+            if (tdb_path != null) {
+                log.warning("Using TDB-backed URI Server, " + 
+                        "that can cause performace problems");
+                return new TDBScheduler(tdb_path);
+            }
+            
+            log.warning("No persistent URI Server available, " +
+                    "falling back to in-memory implementation");
             return new SimpleScheduler();
         }
         else {
@@ -162,13 +239,21 @@ public class LDCreeper {
 
             ds.setDataSourceName("jdbc/postgres/pool/ldcreeper");
             ds.setUser(db_args.getDBUsername());
-            ds.setPassword(db_args.getDBPassword());
             ds.setDatabaseName(db_args.getDBName());
+            
+            String passwd = new String(db_args.getDBPassword());
+            Arrays.fill(db_args.getDBPassword(), ' ');
+            
+            ds.setPassword(passwd);
             
             return new PostgresScheduler(ds);
         }
     }
 
+    private static ModelCreator getModelCreator() {
+        return new ContentTypeModelCreator();
+    }
+    
     private static URIExtractor getURIExtractor(URIServer server) {
         URIExtractor extractor = null;
         
@@ -189,22 +274,25 @@ public class LDCreeper {
                 
                 extractor = new SPARQLExtractor(server, sparql, extractor);
             } catch (IOException ex) {
-                System.err.print("WARNING: Skipping SPARQL query ");
+                log.warning("Skipping SPARQL query");
                 
                 if (!extractor_file.exists()) {
-                    System.err.println("(file " + path + " does not exist)");
+                    log.log(Level.WARNING, "\t(file %s does not exist)", path);
                 }
                 else if (!extractor_file.canRead()) {
-                    System.err.println("(file " + path + " not readable)");
+                    log.log(Level.WARNING, "\t(file %s not readable)", path);
                 }
                 else {
-                    System.err.println("(unknown I/O error)");
+                    /*
+                     * TODO: Print more specific message
+                     */
+                    log.warning("(unknown I/O error)");
                 }
             }            
         }
         
         if (extractor == null) {
-            System.err.println("WARNING: No SPARQL URI Extractor created, " + 
+            log.warning("No SPARQL URI Extractor created, " + 
                     "using default (extract all URIs)");
             return new EveryURIExtractor(server, null);
         }
@@ -232,22 +320,25 @@ public class LDCreeper {
                 
                 filter = new SPARQLFilter(sparql, filter);
             } catch (IOException ex) {
-                System.err.print("WARNING: Skipping SPARQL query ");
+                log.warning("Skipping SPARQL query ");
                 
                 if (!extractor_file.exists()) {
-                    System.err.println("(file " + path + " does not exist)");
+                    log.log(Level.WARNING, "(file %s does not exist)", path);
                 }
                 else if (!extractor_file.canRead()) {
-                    System.err.println("(file " + path + " not readable)");
+                    log.log(Level.WARNING, "(file %s not readable)", path);
                 }
                 else {
-                    System.err.println("(unknown I/O error)");
+                    /*
+                     * TODO: Print more specific message
+                     */
+                    log.warning("(unknown I/O error)");
                 }
             }            
         }
         
         if (filter == null) {
-            System.err.println("WARNING: No Model Filter created, " + 
+            log.warning("No Model Filter created, " + 
                     "using default (no filtering)");
             return new NullFilter(null);
         }
@@ -257,7 +348,7 @@ public class LDCreeper {
 
     private static NamedModelStore getModelStore() {
         if (tdb_path == null) {
-            System.err.println("WARNING: No TDB directory " + 
+            log.warning("No TDB directory " + 
                     "for Model Store specified, using stdout...");
             return new SimpleModelStore();
         }
@@ -265,5 +356,5 @@ public class LDCreeper {
             return new TDBModelStore(tdb_path);
         }
     }
-    
+
 }

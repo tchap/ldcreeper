@@ -23,6 +23,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -36,16 +38,19 @@ public class SimpleScheduler implements URIServer {
     private final Object cond = new Object();
     private final Object lock = new Object();
     
+    private static final Logger log = Logger.getLogger("ldcreeper");
+    
+    
     @Override
     public void submitURI(URI uri) {
         synchronized (lock) {
             if (visited_uris.contains(uri) || processing_uris.contains(uri)) {
-                System.err.println("SKIP " + uri.toString());
+                log.log(Level.INFO, "SKIP %s", uri.toString());
                 return;
             }
         }
         
-        System.err.println("SUBMIT " + uri.toString());
+       log.log(Level.INFO, "SUBMIT %s", uri.toString());
         
         queue.offer(uri);
         
@@ -62,9 +67,11 @@ public class SimpleScheduler implements URIServer {
             synchronized (lock) {
                 processing_uris.add(uri);
             }
+            
+            log.log(Level.INFO, "NEXT %s", uri.toString());
         }
         
-        System.err.println("NEXT " + uri.toString());
+        log.info("NEXT NULL");
         
         return uri;
     }
@@ -76,7 +83,7 @@ public class SimpleScheduler implements URIServer {
             visited_uris.add(uri);
         }
         
-        System.err.println("VISIT " + uri.toString());
+        log.log(Level.INFO, "VISIT %s", uri.toString());
     }
 
     @Override

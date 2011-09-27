@@ -17,6 +17,9 @@
  */
 package ldcreeper.argparse;
 
+import java.io.Console;
+import ldcreeper.argparse.exceptions.ArgParseException;
+
 /**
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
@@ -28,7 +31,7 @@ public class DBConnectionArgs {
     
     private final String db_name;
     private final String db_username;
-    private final String db_password;
+    private char[] db_password;
     
     private final String db_host;
     private final Integer db_port;
@@ -54,13 +57,19 @@ public class DBConnectionArgs {
         db_password = ask_for_password();
     }
 
-    private String ask_for_password() {
-        System.out.println("Password (" + db_username + ":" + db_name + "@" +
-                db_host + ":" + Integer.toString(db_port) + "):");
-        /*
-         * TODO: Ask user
-         */
-        return "ldcreeper_supersecret_passwd";
+    private char[] ask_for_password() {
+        Console cons;
+        char[] passwd;
+
+        if ((cons = System.console()) != null) {
+            String prompt = "Password for " + db_username + 
+                    "@" + db_host + ": ";
+            passwd = cons.readPassword("[%s]", prompt);
+            return passwd;
+        }
+        else {
+            throw new ArgParseException("Cannot get system console");
+        }
     }
 
     public String getDBHost() {
@@ -71,7 +80,7 @@ public class DBConnectionArgs {
         return db_name;
     }
 
-    public String getDBPassword() {
+    public char[] getDBPassword() {
         return db_password;
     }
 
@@ -81,7 +90,6 @@ public class DBConnectionArgs {
 
     public String getDBUsername() {
         return db_username;
-    }
-    
+    }   
     
 }

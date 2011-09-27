@@ -39,17 +39,21 @@ public class TDBModelStore implements NamedModelStore {
     
     @Override
     public void storeNamedGraph(Graph graph, String name) {
-        dataset.asDatasetGraph().addGraph(Node.createURI(name), graph);
+        synchronized (dataset) {
+            dataset.asDatasetGraph().addGraph(Node.createURI(name), graph);
+        }
     }
 
     /*
      * TODO: Find out how the hell does TDB API work and rewrite this
      */
     @Override
-    public synchronized void storeNamedModel(Model model, String uri_name) {
-        Model tdb_model = dataset.getNamedModel(uri_name);
-        tdb_model.add(model);
-        tdb_model.close();
+    public void storeNamedModel(Model model, String uri_name) {
+        synchronized (dataset) {
+            Model tdb_model = dataset.getNamedModel(uri_name);
+            tdb_model.add(model);
+            tdb_model.close();
+        }
     }
     
 }

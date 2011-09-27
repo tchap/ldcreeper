@@ -33,9 +33,10 @@ public class MinerPool {
     private final Miner[] miners;
     private int sleeping_miners;
     
-    public MinerPool(URIServer server, Pipeline pipeline, int miner_count) {
-        System.err.println("Creating MinerPool of " + Integer.toString(miner_count) + " miners");
-        
+    private static final Logger log = Logger.getLogger("ldcreeper");
+    
+    
+    public MinerPool(URIServer server, Pipeline pipeline, int miner_count) {  
         this.pipeline = pipeline;
         this.server = server;
         miners = new Miner[miner_count];
@@ -44,18 +45,12 @@ public class MinerPool {
         for (int i = 0; i < miners.length; ++i) {
             miners[i] = new Miner(i+1);
         }
-        
-        System.err.println("    => DONE");
     }
     
-    public void start() {
-        System.err.println("Starting miners");
-            
+    public void start() {      
         for (Miner miner : miners) {
             miner.start();
         }
-        
-        System.err.println("    => DONE");
     }
     
     public void join() {
@@ -64,7 +59,7 @@ public class MinerPool {
             try {
                 miner.join();
             } catch (InterruptedException ex) {
-                Logger.getLogger(MinerPool.class.getName()).log(Level.SEVERE, null, ex);
+                log.log(Level.SEVERE, "Interrupted exception", ex);
             }
         }
     }
@@ -74,7 +69,7 @@ public class MinerPool {
     }
     
     private void interruptMiners() {
-        System.err.println("Interrupting miners");
+        log.info("Interrupting miners");
         
         for (Miner miner : miners) {
             miner.interrupt();
@@ -99,7 +94,7 @@ public class MinerPool {
                     if ((uri = server.nextURI()) == null) {
                         if (isLastWorker()) {
                             interruptMiners();
-                            System.err.println("Miner " + tid + " exiting");
+                            log.log(Level.INFO, "Miner %s exiting", tid);
                             return;
                         }
 
@@ -109,7 +104,7 @@ public class MinerPool {
                             sleeping_miners -= 1;
                             continue;
                         } catch (InterruptedException ex) {
-                            System.err.println("Miner " + tid + " exiting");
+                            log.log(Level.INFO, "Miner %s exiting", tid);
                             return;
                         }
                     }
@@ -120,7 +115,7 @@ public class MinerPool {
                 try {
                     pipe_clone = pipeline.clone();
                 } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(MinerPool.class.getName()).log(Level.SEVERE, null, ex);
+                    log.log(Level.SEVERE, "Clone not supported", ex);
                     return;
                 }
                 

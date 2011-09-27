@@ -52,6 +52,9 @@ public class PostgresScheduler implements URIServer {
     private final DataSource ds;
         
     private final Object cond = new Object();
+    
+    private static final Logger log = Logger.getLogger("ldcreeper");
+    
 
     public PostgresScheduler(DataSource ds) {
         this.ds = ds;
@@ -71,17 +74,17 @@ public class PostgresScheduler implements URIServer {
         
         try {    
             execUpdate(submit_sql);
-            System.err.println("SUBMIT " + uri.toString());
+            log.log(Level.INFO, "SUBMIT %s", uri.toString());
             
             synchronized (cond) {
                 cond.notify();
             }
         } catch (SQLException ex) {
             if (ex.getSQLState().equals(UNIQUE_VIOLATION)) {
-                System.err.println("SKIP " + uri.toString());
+                log.log(Level.INFO, "SKIP %s", uri.toString());
             }
             else {
-                Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+                log.log(Level.SEVERE, "SQL exception", ex);
             }
         }
         
@@ -113,7 +116,7 @@ public class PostgresScheduler implements URIServer {
             }
         }
         catch (SQLException ex) {
-            Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            log.log(Level.SEVERE, "SQL exception", ex);
             return null;
         }
         
@@ -123,11 +126,10 @@ public class PostgresScheduler implements URIServer {
         try {
             uri = new URI(uri_string);
         } catch (URISyntaxException ex) {
-            Logger.getLogger(PostgresScheduler.class.getName()).log(Level.WARNING, null, ex);
             return null;
         }
         
-        System.err.println("NEXT " + uri.toString());
+        log.log(Level.INFO, "NEXT %s", uri.toString());
         
         return uri;
     }
@@ -144,11 +146,11 @@ public class PostgresScheduler implements URIServer {
         
         
         try {
-            System.err.println("PROCESSED " + uri.toString());
+            log.log(Level.INFO, "PROCESSED %s", uri.toString());
             
             execUpdate(visited_sql);
         } catch (SQLException ex) {
-            Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            log.log(Level.SEVERE, "SQL exception", ex);
         }
     }
 
@@ -172,26 +174,18 @@ public class PostgresScheduler implements URIServer {
         
         
         try {
-            System.err.println("Creating scheduling relation...");
-            execUpdate(create_table_sql);
-            System.err.println("    => DONE");
-            
+            execUpdate(create_table_sql);    
         } catch (SQLException ex) {
-            if (ex.getSQLState().equals(DUPLICATE_TABLE)) {
-                System.err.println("    => Relation already exists - DONE");
-            }
-            else {
-                Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            if (!ex.getSQLState().equals(DUPLICATE_TABLE)) {
+                log.log(Level.SEVERE, "SQL exception", ex);
                 System.exit(1);
             }
         }
         
         try {
-            System.err.println("Cleaning scheduling relation...");
             execUpdate(clean_table_sql);
-            System.err.println("    => DONE");
         } catch (SQLException ex) {
-            Logger.getLogger(PostgresScheduler.class.getName()).log(Level.SEVERE, null, ex);
+            log.log(Level.SEVERE, "SQL exception", ex);
             System.exit(1);
         }
         

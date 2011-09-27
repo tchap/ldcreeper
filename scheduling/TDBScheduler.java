@@ -25,6 +25,8 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.tdb.TDBFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -50,7 +52,8 @@ public class TDBScheduler implements URIServer {
     private int writers_count;
     private int readers_count;
     
-    private int pool_size;
+    private static final Logger log = Logger.getLogger("ldcreeper");
+
 
     public TDBScheduler(String directory) {
         String dir = directory + "scheduling";
@@ -61,10 +64,8 @@ public class TDBScheduler implements URIServer {
         submitted = sched_model.createLiteral("submitted");
         processing = sched_model.createLiteral("being_processed");
         visited = sched_model.createLiteral("visited");
-        
+
         cleanup();
-        
-        computePoolSize();
     }
     
     @Override
@@ -74,7 +75,7 @@ public class TDBScheduler implements URIServer {
         Resource uri_res = sched_model.createResource(uri.toString());
         
         if (sched_model.containsResource(uri_res)) {
-            System.err.println("[" + Integer.toString(pool_size) + "] SKIP " + uri.toString());
+            log.log(Level.INFO, "SKIP %s", uri.toString());
             releaseWriteLock();
             return;
         }
@@ -85,9 +86,7 @@ public class TDBScheduler implements URIServer {
         releaseWriteLock();
         
         
-        pool_size += 1;
-        
-        System.err.println("[" + Integer.toString(pool_size) + "] SUBMIT " + uri.toString());
+        log.log(Level.INFO, "SUBMIT %s", uri.toString());
         
         
         synchronized (submitted_cond) {
@@ -96,7 +95,7 @@ public class TDBScheduler implements URIServer {
     }
 
     @Override
-    public URI nextURI() {
+    public synchronized URI nextURI() {
         acquireReadLock();
         
         ResIterator iter = sched_model.listResourcesWithProperty(status, submitted);
@@ -107,7 +106,7 @@ public class TDBScheduler implements URIServer {
                 uri_res = iter.nextResource();
             }
             else {
-                System.err.println("[" + Integer.toString(pool_size) + "] NEXT NULL");
+                log.info("NEXT NULL");
                 return null;
             }
         }
@@ -123,9 +122,7 @@ public class TDBScheduler implements URIServer {
         sched_model.commit();
         
         releaseWriteLock();
-        
-        pool_size -= 1;
-        
+
         
         URI uri;
         
@@ -135,12 +132,11 @@ public class TDBScheduler implements URIServer {
             /*
              * Cannot happen, only possible to insert valid URI
              */
-            System.err.println("[" + Integer.toString(pool_size) + "] NEXT NULL");
-            return null;
+            return nextURI();
         }
         
         
-        System.err.println("[" + Integer.toString(pool_size) + "] NEXT " + uri.toString());
+        log.log(Level.INFO, "NEXT %s", uri.toString());
         
         return uri;
     }
@@ -158,7 +154,7 @@ public class TDBScheduler implements URIServer {
         releaseWriteLock();
         
         
-        System.err.println("[" + Integer.toString(pool_size) + "] PROCESSED " + uri.toString());
+        log.log(Level.INFO, "PROCESSED %s", uri.toString());
     }
 
     @Override
@@ -186,16 +182,6 @@ public class TDBScheduler implements URIServer {
         sched_model.commit();
         
         releaseWriteLock();
-    }
-    
-    private void computePoolSize() {
-        acquireReadLock();
-        
-        ResIterator iter = sched_model.listResourcesWithProperty(status, submitted);
-        
-        pool_size = iter.toList().size();
-        
-        releaseReadLock();
     }
     
     private void acquireReadLock() {
