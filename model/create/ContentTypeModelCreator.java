@@ -36,6 +36,9 @@ public class ContentTypeModelCreator implements ModelCreator {
     
     private static final HashMap<String, String> ct_map = new HashMap<String, String>();
     
+    private static final Logger log = Logger.getLogger("ldcreeper");
+    
+    
     static {
         ct_map.put("application/rdf+xml", "RDF/XML");
         ct_map.put("application/x-turtle", "TURTLE");
@@ -60,11 +63,11 @@ public class ContentTypeModelCreator implements ModelCreator {
         try {
             conn = uri.toURL().openConnection();
         } catch (MalformedURLException ex) {
-            Logger.getLogger("ldcreeper").log(Level.INFO, 
+            log.log(Level.INFO, 
                     "Malformed URL exception", ex);
             return null;
         } catch (IOException ex) {
-            Logger.getLogger("ldcreeper").log(Level.WARNING, 
+            log.log(Level.WARNING, 
                     "I/O exception", ex);
             return null;
         }
@@ -73,7 +76,7 @@ public class ContentTypeModelCreator implements ModelCreator {
         String lang = ct_map.get(mime);
         
         if (lang == null) {
-            // Content-type not supported
+            // Content type not supported
             return null;
         }
         

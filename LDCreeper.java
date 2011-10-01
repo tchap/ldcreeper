@@ -24,10 +24,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +41,7 @@ import ldcreeper.argparse.exceptions.ArgParseException;
 import ldcreeper.logging.formatters.ConsoleFormatter;
 import ldcreeper.mining.MinerPool;
 import ldcreeper.mining.Pipeline;
+import ldcreeper.mining.sindice.SindiceFQQuery;
 import ldcreeper.mining.sindice.SindiceNQQuery;
 import ldcreeper.mining.sindice.SindiceQQuery;
 import ldcreeper.mining.sindice.SindiceQueryExecution;
@@ -83,21 +81,28 @@ public class LDCreeper {
     private static Integer thread_count = 4;
     
     @Parameter(names="-q", description="Add sindice keyword search query " +
-            "to get initial URI set. Final query sent is intersection of " + 
-            "all registered queries.")
-    private static List<String> q_queries = new ArrayList<String>();
+            "to get initial URI set")
+    private static SindiceQQuery q_query = null;
     
     @Parameter(names="-nq", description="Add sindice ntriple search query " +
-            "to get initial URI set. Final query sent is intersection of " + 
-            "all registered queries.")
-    private static List<String> nq_queries = new ArrayList<String>();
+            "to get initial URI set")
+    private static SindiceNQQuery nq_query = null;
+    
+    @Parameter(names="-fq", description="Add sindice filter search query " +
+            "to get initial URI set. Filter query can be specified " + 
+            "multiple times.")
+    private static List<String> fq_queries = new ArrayList<String>();
+    
+    @Parameter(names={"-p", "-pages"}, description="Number of pages to be " + 
+            "requested from Sindice")
+    private static Integer page_count = 10;
     
     @Parameter(names="-tdb", 
                description="Directory path for tdb files to be used for " + 
                     "making downloaded models persistent")
     private static String tdb_path = null;
     
-    @Parameter(names={"-p", "-postgres"},
+    @Parameter(names="-postgres",
                description="Specification of PostgreSQL DB connection " + 
                     "to be used for making URI pool persistent")
     private static DBConnectionArgs db_args = null;
@@ -125,8 +130,10 @@ public class LDCreeper {
             //"-h",
             "-v",
             "-t",           "5",
-            "-q", "Tim Berners Lee foaf",
-            "-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB",
+            "-q",           "Tim Berners-Lee foaf",
+            "-nq",          "* <rdf:type> <foaf:Person>",
+            "-p",           "3",
+            //"-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB",
             //"-p",           "ldcreeper:ldcreeper_db",
             "-s",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/select.sparql",
             "-c",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/construct.sparql",
@@ -166,19 +173,6 @@ public class LDCreeper {
         
        
         getInitialURISet(server);
-        
-        
-        System.out.print("Starting in ");
-        
-        for (int i = 10; i > 0; --i) {
-            System.out.print(Integer.toString(i) + " ");
-            
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {}
-        }
-        
-        System.out.println("GO!\n");
         
         
         miners.start();
@@ -234,13 +228,13 @@ public class LDCreeper {
                     "trying other solutions");
             
             if (tdb_path != null) {
-                log.warning("Using TDB-backed URI Server, " + 
+                log.warning("TDB directory specified for URI Server, " + 
                         "that can cause performace problems");
                 return new TDBScheduler(tdb_path);
             }
             
-            log.warning("No persistent URI Server available, " +
-                    "falling back to in-memory implementation");
+            log.warning("No TDB directory specified for URI Server, " +
+                    "using in-memory implementation");
             return new SimpleScheduler();
         }
         else {
@@ -358,7 +352,7 @@ public class LDCreeper {
     private static NamedModelStore getModelStore() {
         if (tdb_path == null) {
             log.warning("No TDB directory " + 
-                    "for Model Store specified, using stdout...");
+                    "specified for Model Store, using stdout...");
             return new SimpleModelStore();
         }
         else {
@@ -369,16 +363,39 @@ public class LDCreeper {
     private static void getInitialURISet(URIServer server) {
         SindiceQueryExecution qexec = new SindiceQueryExecution();
         
-        for (String q : q_queries) {
-            qexec.addQuery(new SindiceQQuery(q));
+        if (q_query != null || nq_query != null) { 
+            if (q_query != null) {
+                qexec.addQuery(q_query);
+            }
+            else {
+                qexec.addQuery(new SindiceQQuery(""));
+            }
+            
+            if (nq_query != null) {
+                qexec.addQuery(nq_query);
+            }
+            
+            qexec.addQuery(new SindiceFQQuery("format:RDF"));
+            
+            qexec.addQuery(new SindiceFQQuery("-format:RDFA"));
+            qexec.addQuery(new SindiceFQQuery("-format:MICRODATA"));
+            qexec.addQuery(new SindiceFQQuery("-format:MICROFORMAT"));
+            qexec.addQuery(new SindiceFQQuery("-format:XFN"));
+            qexec.addQuery(new SindiceFQQuery("-format:HCARD"));
+            qexec.addQuery(new SindiceFQQuery("-format:HCALENDAR"));
+            qexec.addQuery(new SindiceFQQuery("-format:HLISTING"));
+            qexec.addQuery(new SindiceFQQuery("-format:HRESUME"));
+            qexec.addQuery(new SindiceFQQuery("-format:LICENSE"));
+            qexec.addQuery(new SindiceFQQuery("-format:GEO"));
+            qexec.addQuery(new SindiceFQQuery("-format:ADR"));
+            
+            for (String fq : fq_queries) {
+                qexec.addQuery(new SindiceFQQuery(fq));
+            }
         }
         
-        for (String nq : nq_queries) {
-            qexec.addQuery(new SindiceNQQuery(nq));
-        }
         
-        
-        List<URI> links = qexec.getResultLinks();
+        List<URI> links = qexec.getResultLinks(page_count);
         
         if (links == null) {
             log.log(Level.SEVERE, "Sindice query execution failed");

@@ -19,6 +19,9 @@ package ldcreeper.argparse.converters;
 
 import java.io.File;
 import ldcreeper.argparse.DBConnectionArgs;
+import ldcreeper.mining.sindice.SindiceFQQuery;
+import ldcreeper.mining.sindice.SindiceNQQuery;
+import ldcreeper.mining.sindice.SindiceQQuery;
 
 
 /**
@@ -51,6 +54,15 @@ public class ConverterFactory {
         }
         else if (cls.equals(Boolean.class)) {
             return new BooleanConverter();
+        }
+        else if (cls.equals(SindiceQQuery.class)) {
+            return new SindiceQQueryConverter();
+        }
+        else if (cls.equals(SindiceNQQuery.class)) {
+            return new SindiceNQQueryConverter();
+        }
+        else if (cls.equals(SindiceFQQuery.class)) {
+            return new SindiceFQQueryConverter();
         }
         else {
             return null;

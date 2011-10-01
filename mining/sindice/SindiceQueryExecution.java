@@ -45,8 +45,6 @@ public class SindiceQueryExecution {
     
     private static final Logger log = Logger.getLogger("ldcreeper");
 
-    private static final String api_url = "http://api.sindice.com/v3/search";
-    
     
     public SindiceQueryExecution() {
         query_builder = new StringBuilder("format=rdfxml&");
@@ -59,7 +57,10 @@ public class SindiceQueryExecution {
         query_added = true;
     }
     
-    public List<URI> getResultLinks() {
+    public List<URI> getResultLinks(int page_count) {
+        log.info("Preparing to use Sindice search services");
+        log.log(Level.INFO, "\tQuery: %s", query_builder.toString());
+        
         if (!query_added) {
             log.log(Level.SEVERE, "At least one sindice query " + 
                     "has to be specified");
@@ -71,7 +72,7 @@ public class SindiceQueryExecution {
         
         try {
             URI np_uri = new URI("http", "api.sindice.com", "/v3/search", 
-                    query_builder.toString());
+                    query_builder.toString(), null);
             next_page = new URL(np_uri.toASCIIString());
         } catch (URISyntaxException ex) {
             log.log(Level.SEVERE, "URI syntax exception", ex);
@@ -94,9 +95,11 @@ public class SindiceQueryExecution {
         parser.setContentHandler(sax_handler);
         
         List<URI> links = new ArrayList<URI>();
-        int counter = 0;
+        int counter = 1;
         
-        while (next_page != null && counter < 10) {
+        log.info("Connecting to Sindice");
+        
+        while (next_page != null && counter <= page_count) {
             try {
                 parser.parse(new InputSource(next_page.openStream()));
             } catch (IOException ex) {
@@ -109,9 +112,14 @@ public class SindiceQueryExecution {
             
             links.addAll(sax_handler.getResultLinks());
             
+            log.info(String.format("\tSearch results processed [page %d/%d]", 
+                    counter, page_count));
+            
             next_page = sax_handler.getNextPage();
             counter++;
         }
+        
+        log.info("Sindice search results processed");
         
         return links;
     }

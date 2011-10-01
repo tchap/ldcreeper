@@ -70,9 +70,10 @@ public class SimpleScheduler implements URIServer {
             
             log.log(Level.INFO, "NEXT %s", uri.toString());
         }
-        
-        log.info("NEXT NULL");
-        
+        else {
+            log.info("NEXT NULL");
+        }
+            
         return uri;
     }
 
@@ -83,7 +84,7 @@ public class SimpleScheduler implements URIServer {
             visited_uris.add(uri);
         }
         
-        log.log(Level.INFO, "VISIT %s", uri.toString());
+        log.log(Level.INFO, "PROCESSED %s", uri.toString());
     }
 
     @Override
