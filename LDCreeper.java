@@ -24,8 +24,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,6 +44,9 @@ import ldcreeper.argparse.exceptions.ArgParseException;
 import ldcreeper.logging.formatters.ConsoleFormatter;
 import ldcreeper.mining.MinerPool;
 import ldcreeper.mining.Pipeline;
+import ldcreeper.mining.sindice.SindiceNQQuery;
+import ldcreeper.mining.sindice.SindiceQQuery;
+import ldcreeper.mining.sindice.SindiceQueryExecution;
 import ldcreeper.model.create.ContentTypeModelCreator;
 import ldcreeper.model.create.ModelCreator;
 import ldcreeper.model.extract.EveryURIExtractor;
@@ -77,6 +82,16 @@ public class LDCreeper {
                description="Number of threads to start")
     private static Integer thread_count = 4;
     
+    @Parameter(names="-q", description="Add sindice keyword search query " +
+            "to get initial URI set. Final query sent is intersection of " + 
+            "all registered queries.")
+    private static List<String> q_queries = new ArrayList<String>();
+    
+    @Parameter(names="-nq", description="Add sindice ntriple search query " +
+            "to get initial URI set. Final query sent is intersection of " + 
+            "all registered queries.")
+    private static List<String> nq_queries = new ArrayList<String>();
+    
     @Parameter(names="-tdb", 
                description="Directory path for tdb files to be used for " + 
                     "making downloaded models persistent")
@@ -104,12 +119,13 @@ public class LDCreeper {
      */
     public static void main(String[] args) {
         final String starting_point = "http://dig.csail.mit.edu/2008/webdav/timbl/foaf.rdf";
-        
+
 
         String[] argz = {
             //"-h",
             "-v",
             "-t",           "5",
+            "-q", "Tim Berners Lee foaf",
             "-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB",
             //"-p",           "ldcreeper:ldcreeper_db",
             "-s",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/select.sparql",
@@ -149,15 +165,8 @@ public class LDCreeper {
         MinerPool miners = new MinerPool(server, pipeline, thread_count);
         
        
-        URI starting_uri = null;
+        getInitialURISet(server);
         
-        try {
-            starting_uri = new URI(starting_point);
-        } catch (URISyntaxException ex) {
-            return;
-        }
-        
-        server.submitURI(starting_uri);
         
         System.out.print("Starting in ");
         
@@ -354,6 +363,31 @@ public class LDCreeper {
         }
         else {
             return new TDBModelStore(tdb_path);
+        }
+    }
+
+    private static void getInitialURISet(URIServer server) {
+        SindiceQueryExecution qexec = new SindiceQueryExecution();
+        
+        for (String q : q_queries) {
+            qexec.addQuery(new SindiceQQuery(q));
+        }
+        
+        for (String nq : nq_queries) {
+            qexec.addQuery(new SindiceNQQuery(nq));
+        }
+        
+        
+        List<URI> links = qexec.getResultLinks();
+        
+        if (links == null) {
+            log.log(Level.SEVERE, "Sindice query execution failed");
+            return;
+        }
+        
+        
+        for (URI uri : links) {
+            server.submitURI(uri);
         }
     }
 
