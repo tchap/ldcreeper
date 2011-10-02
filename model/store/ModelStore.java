@@ -18,10 +18,31 @@
 package ldcreeper.model.store;
 
 
+import com.hp.hpl.jena.graph.Graph;
+import com.hp.hpl.jena.rdf.model.Model;
+import java.util.logging.Logger;
+
 /**
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public interface ModelStore {
+public abstract class ModelStore {
+    
+    public static ModelStore getModelStore(String tdb_path) {
+        final Logger log = Logger.getLogger("ldcreeper");
+        
+        if (tdb_path == null) {
+            log.warning("No TDB directory " + 
+                    "specified for Model Store, using stdout...");
+            return new SimpleModelStore();
+        }
+        else {
+            return new TDBModelStore(tdb_path);
+        }
+    }
+    
+    public abstract void storeNamedGraph(Graph graph, String name);
+    
+    public abstract void storeNamedModel(Model model, String name);
     
 }

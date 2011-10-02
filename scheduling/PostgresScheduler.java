@@ -31,7 +31,7 @@ import javax.sql.DataSource;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class PostgresScheduler implements URIServer {
+public class PostgresScheduler extends URIServer {
 
     private final String next_sql = 
             "UPDATE scheduling " +
@@ -136,9 +136,6 @@ public class PostgresScheduler implements URIServer {
 
     @Override
     public void markURIVisited(URI uri) {
-        /*
-         * TODO: Is it meaningful to check if URI is in 'processing' state?
-         */
         final String visited_sql = 
                 "UPDATE scheduling " +
                 "SET state = 3 " +

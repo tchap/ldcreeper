@@ -28,7 +28,7 @@ import com.hp.hpl.jena.tdb.TDBFactory;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class TDBModelStore implements NamedModelStore {
+public class TDBModelStore extends ModelStore {
     
     private final Dataset dataset;
     
@@ -44,9 +44,6 @@ public class TDBModelStore implements NamedModelStore {
         }
     }
 
-    /*
-     * TODO: Find out how the hell does TDB API work and rewrite this
-     */
     @Override
     public void storeNamedModel(Model model, String uri_name) {
         synchronized (dataset) {

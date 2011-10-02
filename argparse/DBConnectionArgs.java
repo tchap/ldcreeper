@@ -64,7 +64,7 @@ public class DBConnectionArgs {
         if ((cons = System.console()) != null) {
             String prompt = "Password for " + db_username + 
                     "@" + db_host + ": ";
-            passwd = cons.readPassword("[%s]", prompt);
+            passwd = cons.readPassword("%s", prompt);
             return passwd;
         }
         else {

@@ -32,11 +32,8 @@ import java.util.logging.Logger;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class TDBScheduler implements URIServer {
+public class TDBScheduler extends URIServer {
 
-    /*
-     * TODO: Use better URI according to LD principles
-     */
     private static final String prefix_uri = "http://localhost/scheduling/";
  
     private final Model sched_model;

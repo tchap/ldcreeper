@@ -15,17 +15,23 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.model.store;
+package ldcreeper.model.mine;
 
-
-import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
 
 /**
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public interface NamedModelStore extends ModelStore {
-    public void storeNamedGraph(Graph graph, String name);
-    public void storeNamedModel(Model model, String name);
+public class SimpleMiner extends ModelMiner {
+
+    public SimpleMiner(ModelMiner next_miner) {
+        super(next_miner);
+    }
+    
+    @Override
+    protected Model mine(Model model) {
+        return model;
+    }
+    
 }

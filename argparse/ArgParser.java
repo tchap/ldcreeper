@@ -19,7 +19,6 @@ package ldcreeper.argparse;
 
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
@@ -45,20 +44,22 @@ public class ArgParser {
     private final Map<String, ParameterRecord> switch_parameters =
             new HashMap<String, ParameterRecord>();
     
-    private String help_string = 
+    private StringBuilder help_builder = new StringBuilder( 
             "Usage: java -jar <ldcreeper jar> [ OPTION... ]\n" + 
-            "where OPTION is one of:\n";
+            "where OPTION is one of:\n");
    
     
     private void addParametersFrom(Class<?> cls, Object obj) {
+        final String line_format = "\t%-30s %s\n";
+        
         Field[] fields = cls.getDeclaredFields();
+        
         
         for (Field field : fields) {
             Parameter param;
             
             if ((param = field.getAnnotation(Parameter.class)) != null) {
                 if (param.names().length != 0) {
-                    String help_line = "\t%-30s %s\n";
                     String names_str = "";
                     
                     for (String name : param.names()) {
@@ -78,8 +79,8 @@ public class ArgParser {
                         names_str += " VALUE";
                     }
                     
-                    help_string += String.format(help_line, 
-                            names_str, param.description());
+                    help_builder.append(String.format(line_format, names_str, 
+                            formatDescription(param.description(), 31)));
                 }
                 else {
                     throw new ArgParseException("Parameter names empty for " +
@@ -87,6 +88,9 @@ public class ArgParser {
                 }
             }
         }
+        
+        help_builder.append(String.format(line_format, "-h, -help", 
+                "Print this help"));
     }
     
     public void addParametersFrom(Object obj) {
@@ -193,17 +197,49 @@ public class ArgParser {
     
     private void help(String str) {
         if (str == null) {
-            System.out.println(help_string);
+            System.out.println(help_builder.toString());
             System.exit(0);
         }
         else {
             System.err.println(str);
-            System.out.println(help_string);
+            System.out.println(help_builder.toString());
             System.exit(1);
         }
     }
 
-    private class ParameterRecord {
+    private static String formatDescription(String desc, int offset) {
+        final String line_prefix = String.format("%" + 
+                Integer.toString(offset) + "s", "");
+        int width = 80 - offset;
+        
+        if (desc.length() <= width) {
+            return desc + "\n";
+        }
+        
+        StringBuilder desc_builder = new StringBuilder();
+        int line_width = 0;
+        
+        for (String word: desc.split("\\s")) {
+            if (line_width + 1 + word.length() < width) {
+                desc_builder.append(word);
+                desc_builder.append(" ");
+                line_width += word.length();
+            }
+            else {
+                desc_builder.append("\n\t");
+                desc_builder.append(line_prefix);
+                desc_builder.append(word);
+                desc_builder.append(" ");
+                line_width = word.length();
+            }
+        }
+        
+        desc_builder.append("\n");
+        
+        return desc_builder.toString();
+    }
+    
+    private static class ParameterRecord {
         
         private Parameter parameter;
         private Object object;

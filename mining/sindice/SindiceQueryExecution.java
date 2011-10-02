@@ -37,9 +37,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
 public class SindiceQueryExecution {
-    /*
-     * TODO: String <-> StringBuilder everywhere
-     */
+
     private final StringBuilder query_builder;
     private boolean query_added = false;
     
@@ -58,8 +56,7 @@ public class SindiceQueryExecution {
     }
     
     public List<URI> getResultLinks(int page_count) {
-        log.info("Preparing to use Sindice search services");
-        log.log(Level.INFO, "\tQuery: %s", query_builder.toString());
+        log.info("Preparing to query Sindice search services");
         
         if (!query_added) {
             log.log(Level.SEVERE, "At least one sindice query " + 

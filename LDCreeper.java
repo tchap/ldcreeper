@@ -17,16 +17,8 @@
  */
 package ldcreeper;
 
-/*
- * TODO: Shorten imports
- */
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -41,39 +33,29 @@ import ldcreeper.argparse.exceptions.ArgParseException;
 import ldcreeper.logging.formatters.ConsoleFormatter;
 import ldcreeper.mining.MinerPool;
 import ldcreeper.mining.Pipeline;
-import ldcreeper.mining.sindice.SindiceFQQuery;
 import ldcreeper.mining.sindice.SindiceNQQuery;
 import ldcreeper.mining.sindice.SindiceQQuery;
-import ldcreeper.mining.sindice.SindiceQueryExecution;
-import ldcreeper.model.create.ContentTypeModelCreator;
-import ldcreeper.model.create.ModelCreator;
-import ldcreeper.model.extract.EveryURIExtractor;
-import ldcreeper.model.extract.SPARQLExtractor;
+import ldcreeper.model.build.ModelBuilder;
 import ldcreeper.model.extract.URIExtractor;
-import ldcreeper.model.filter.ModelFilter;
-import ldcreeper.model.filter.NullFilter;
-import ldcreeper.model.filter.SPARQLFilter;
-import ldcreeper.model.store.NamedModelStore;
-import ldcreeper.model.store.SimpleModelStore;
-import ldcreeper.model.store.TDBModelStore;
-import ldcreeper.scheduling.PostgresScheduler;
-import ldcreeper.scheduling.SimpleScheduler;
-import ldcreeper.scheduling.TDBScheduler;
+import ldcreeper.model.mine.ModelMiner;
+import ldcreeper.model.store.ModelStore;
 import ldcreeper.scheduling.URIServer;
-import org.postgresql.ds.PGPoolingDataSource;
 
 
 /**
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
+/*
+ * TODO: Add info messages everywhere
+ */
 public class LDCreeper {
 
     @Parameter(names="-v", description="Print verbose output to the console")
     private static Boolean verbose = false;
     
-    @Parameter(names={"-l", "-logpattern"}, description="Pattern of the logfile " + ""
-            + "as specified by java.util.logging.FileHandler")
+    @Parameter(names={"-l", "-logpattern"}, description="Pattern of " + 
+            "the logfile as specified by java.util.logging.FileHandler")
     private static String log_pattern = null;
     
     @Parameter(names={"-t", "-threads"}, 
@@ -104,7 +86,9 @@ public class LDCreeper {
     
     @Parameter(names="-postgres",
                description="Specification of PostgreSQL DB connection " + 
-                    "to be used for making URI pool persistent")
+                    "to be used for making URI pool persistent. " +
+                    "Format is user:database@host:port. Host and port " +
+                    "can be skipped if localhost:5432.")
     private static DBConnectionArgs db_args = null;
     
     @Parameter(names={"-s", "-select-query"}, 
@@ -123,9 +107,7 @@ public class LDCreeper {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        final String starting_point = "http://dig.csail.mit.edu/2008/webdav/timbl/foaf.rdf";
-
-
+        
         String[] argz = {
             //"-h",
             "-v",
@@ -153,26 +135,27 @@ public class LDCreeper {
         }
         
         
-        initLogger();
+        initLogging();
         
         
-        ModelCreator creator = getModelCreator(); 
+        ModelBuilder builder = ModelBuilder.getModelBuilder(); 
           
-        URIServer server = getURIServer();
+        URIServer server = URIServer.getURIServer(db_args, tdb_path);
         
-        URIExtractor extractor = getURIExtractor(server);
+        URIExtractor extractor = URIExtractor.getURIExtractor(extractor_files, 
+                server);
         
-        ModelFilter filter = getModelFilter();
+        ModelMiner miner = ModelMiner.getModelMiner(miner_files);
         
-        NamedModelStore store = getModelStore();
+        ModelStore store = ModelStore.getModelStore(tdb_path);
         
         
-        Pipeline pipeline = new Pipeline(creator, extractor, filter, store);
+        Pipeline pipeline = new Pipeline(builder, extractor, miner, store);
         
         MinerPool miners = new MinerPool(server, pipeline, thread_count);
         
        
-        getInitialURISet(server);
+        server.querySindiceForLinks(q_query, nq_query, fq_queries, page_count);
         
         
         miners.start();
@@ -180,7 +163,7 @@ public class LDCreeper {
     
     }
     
-    private static void initLogger() {
+    private static void initLogging() {
         log.setUseParentHandlers(false);
         
         for (Handler handler : log.getHandlers()) {
@@ -220,192 +203,6 @@ public class LDCreeper {
         
         
         LogManager.getLogManager().addLogger(log);
-    }
-
-    private static URIServer getURIServer() {
-        if (db_args == null) {
-            log.warning("No database specified for URI Server, " + 
-                    "trying other solutions");
-            
-            if (tdb_path != null) {
-                log.warning("TDB directory specified for URI Server, " + 
-                        "that can cause performace problems");
-                return new TDBScheduler(tdb_path);
-            }
-            
-            log.warning("No TDB directory specified for URI Server, " +
-                    "using in-memory implementation");
-            return new SimpleScheduler();
-        }
-        else {
-            PGPoolingDataSource ds = new PGPoolingDataSource();
-
-            ds.setDataSourceName("jdbc/postgres/pool/ldcreeper");
-            ds.setUser(db_args.getDBUsername());
-            ds.setDatabaseName(db_args.getDBName());
-            
-            String passwd = new String(db_args.getDBPassword());
-            Arrays.fill(db_args.getDBPassword(), ' ');
-            
-            ds.setPassword(passwd);
-            
-            return new PostgresScheduler(ds);
-        }
-    }
-
-    private static ModelCreator getModelCreator() {
-        return new ContentTypeModelCreator();
-    }
-    
-    private static URIExtractor getURIExtractor(URIServer server) {
-        URIExtractor extractor = null;
-        
-        for (String path : extractor_files) {
-            File extractor_file = new File(path);
-
-            String sparql = "";
-
-            BufferedReader reader = null;
-            String line;
-
-            try {
-                reader = new BufferedReader(new FileReader(extractor_file));
-                
-                while ((line = reader.readLine()) != null) {
-                    sparql += line;
-                }
-                
-                extractor = new SPARQLExtractor(server, sparql, extractor);
-            } catch (IOException ex) {
-                log.warning("Skipping SPARQL query");
-                
-                if (!extractor_file.exists()) {
-                    log.log(Level.WARNING, "\t(file %s does not exist)", path);
-                }
-                else if (!extractor_file.canRead()) {
-                    log.log(Level.WARNING, "\t(file %s not readable)", path);
-                }
-                else {
-                    /*
-                     * TODO: Print more specific message
-                     */
-                    log.warning("(unknown I/O error)");
-                }
-            }            
-        }
-        
-        if (extractor == null) {
-            log.warning("No SPARQL URI Extractor created, " + 
-                    "using default (extract all URIs)");
-            return new EveryURIExtractor(server, null);
-        }
-        
-        return extractor;
-    }
-
-    private static ModelFilter getModelFilter() {
-        ModelFilter filter = null;
-        
-        for (String path : miner_files) {
-            File extractor_file = new File(path);
-
-            String sparql = "";
-
-            BufferedReader reader = null;
-            String line;
-
-            try {
-                reader = new BufferedReader(new FileReader(extractor_file));
-                
-                while ((line = reader.readLine()) != null) {
-                    sparql += line;
-                }
-                
-                filter = new SPARQLFilter(sparql, filter);
-            } catch (IOException ex) {
-                log.warning("Skipping SPARQL query ");
-                
-                if (!extractor_file.exists()) {
-                    log.log(Level.WARNING, "(file %s does not exist)", path);
-                }
-                else if (!extractor_file.canRead()) {
-                    log.log(Level.WARNING, "(file %s not readable)", path);
-                }
-                else {
-                    /*
-                     * TODO: Print more specific message
-                     */
-                    log.warning("(unknown I/O error)");
-                }
-            }            
-        }
-        
-        if (filter == null) {
-            log.warning("No Model Filter created, " + 
-                    "using default (no filtering)");
-            return new NullFilter(null);
-        }
-        
-        return filter;
-    }
-
-    private static NamedModelStore getModelStore() {
-        if (tdb_path == null) {
-            log.warning("No TDB directory " + 
-                    "specified for Model Store, using stdout...");
-            return new SimpleModelStore();
-        }
-        else {
-            return new TDBModelStore(tdb_path);
-        }
-    }
-
-    private static void getInitialURISet(URIServer server) {
-        SindiceQueryExecution qexec = new SindiceQueryExecution();
-        
-        if (q_query != null || nq_query != null) { 
-            if (q_query != null) {
-                qexec.addQuery(q_query);
-            }
-            else {
-                qexec.addQuery(new SindiceQQuery(""));
-            }
-            
-            if (nq_query != null) {
-                qexec.addQuery(nq_query);
-            }
-            
-            qexec.addQuery(new SindiceFQQuery("format:RDF"));
-            
-            qexec.addQuery(new SindiceFQQuery("-format:RDFA"));
-            qexec.addQuery(new SindiceFQQuery("-format:MICRODATA"));
-            qexec.addQuery(new SindiceFQQuery("-format:MICROFORMAT"));
-            qexec.addQuery(new SindiceFQQuery("-format:XFN"));
-            qexec.addQuery(new SindiceFQQuery("-format:HCARD"));
-            qexec.addQuery(new SindiceFQQuery("-format:HCALENDAR"));
-            qexec.addQuery(new SindiceFQQuery("-format:HLISTING"));
-            qexec.addQuery(new SindiceFQQuery("-format:HRESUME"));
-            qexec.addQuery(new SindiceFQQuery("-format:LICENSE"));
-            qexec.addQuery(new SindiceFQQuery("-format:GEO"));
-            qexec.addQuery(new SindiceFQQuery("-format:ADR"));
-            
-            for (String fq : fq_queries) {
-                qexec.addQuery(new SindiceFQQuery(fq));
-            }
-        }
-        
-        
-        List<URI> links = qexec.getResultLinks(page_count);
-        
-        if (links == null) {
-            log.log(Level.SEVERE, "Sindice query execution failed");
-            return;
-        }
-        
-        
-        for (URI uri : links) {
-            server.submitURI(uri);
-        }
     }
 
 }

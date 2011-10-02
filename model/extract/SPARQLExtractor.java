@@ -47,9 +47,6 @@ public class SPARQLExtractor extends URIExtractor {
 
     @Override
     protected void extractFrom(Model model) {
-        /*
-         * TODO: Understand better how ResultSet works => more efficient code
-         */
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         ResultSet result = qexec.execSelect();
         

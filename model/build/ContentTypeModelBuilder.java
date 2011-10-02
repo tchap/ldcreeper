@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.model.create;
+package ldcreeper.model.build;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -32,7 +32,7 @@ import java.util.logging.Logger;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class ContentTypeModelCreator implements ModelCreator {
+public class ContentTypeModelBuilder extends ModelBuilder {
     
     private static final HashMap<String, String> ct_map = new HashMap<String, String>();
     
@@ -47,9 +47,9 @@ public class ContentTypeModelCreator implements ModelCreator {
     }
     
     @Override
-    public Model createFromURI(String uri) {
+    public Model buildFromURI(String uri) {
         try {
-            return createFromURI(new URI(uri));
+            return buildFromURI(new URI(uri));
         } catch (URISyntaxException ex) {
             return null;
         }
@@ -57,7 +57,7 @@ public class ContentTypeModelCreator implements ModelCreator {
     }
 
     @Override
-    public Model createFromURI(URI uri) {
+    public Model buildFromURI(URI uri) {
         URLConnection conn;
         
         try {

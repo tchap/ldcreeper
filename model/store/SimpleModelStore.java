@@ -25,7 +25,7 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class SimpleModelStore implements NamedModelStore {
+public class SimpleModelStore extends ModelStore {
 
     @Override
     public void storeNamedGraph(Graph graph, String name) {

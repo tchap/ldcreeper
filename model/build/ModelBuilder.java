@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.model.create;
+package ldcreeper.model.build;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import java.net.URI;
@@ -24,7 +24,14 @@ import java.net.URI;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public interface ModelCreator {
-    public Model createFromURI(URI uri);
-    public Model createFromURI(String uri);
+public abstract class ModelBuilder {
+       
+    public static ModelBuilder getModelBuilder() {
+        return new ContentTypeModelBuilder();
+    }
+    
+    public abstract Model buildFromURI(URI uri);
+    
+    public abstract Model buildFromURI(String uri);
+    
 }

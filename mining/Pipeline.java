@@ -19,10 +19,10 @@ package ldcreeper.mining;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import java.net.URI;
-import ldcreeper.model.create.ModelCreator;
+import ldcreeper.model.build.ModelBuilder;
 import ldcreeper.model.extract.URIExtractor;
-import ldcreeper.model.filter.ModelFilter;
-import ldcreeper.model.store.NamedModelStore;
+import ldcreeper.model.mine.ModelMiner;
+import ldcreeper.model.store.ModelStore;
 
 /**
  *
@@ -30,17 +30,17 @@ import ldcreeper.model.store.NamedModelStore;
  */
 public class Pipeline implements Runnable, Cloneable {
     
-    private final ModelCreator creator;
+    private final ModelBuilder builder;
     private final URIExtractor extractor;
-    private final ModelFilter filter;
-    private final NamedModelStore store;
+    private final ModelMiner miner;
+    private final ModelStore store;
     
     protected URI uri;
 
-    public Pipeline(ModelCreator creator, URIExtractor extractor, ModelFilter filter, NamedModelStore store) {
-        this.creator = creator;
+    public Pipeline(ModelBuilder builder, URIExtractor extractor, ModelMiner miner, ModelStore store) {
+        this.builder = builder;
         this.extractor = extractor;
-        this.filter = filter;
+        this.miner = miner;
         this.store = store;
     }
     
@@ -54,7 +54,7 @@ public class Pipeline implements Runnable, Cloneable {
             throw new NullPointerException("URI not set");
         }
         
-        Model model = creator.createFromURI(uri);
+        Model model = builder.buildFromURI(uri);
         
         if (model == null) {
             return;
@@ -62,7 +62,7 @@ public class Pipeline implements Runnable, Cloneable {
         
         extractor.extractFromModel(model);
         
-        model = filter.filterModel(model);
+        model = miner.mineModel(model);
         
         if (model == null) {
             return;

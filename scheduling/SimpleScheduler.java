@@ -30,7 +30,7 @@ import java.util.logging.Logger;
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class SimpleScheduler implements URIServer {
+public class SimpleScheduler extends URIServer {
 
     private final Set<URI> processing_uris = new TreeSet<URI>();
     private final Set<URI> visited_uris = new HashSet<URI>();

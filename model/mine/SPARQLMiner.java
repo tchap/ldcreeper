@@ -15,23 +15,33 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.model.filter;
+package ldcreeper.model.mine;
 
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 
 /**
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class NullFilter extends ModelFilter {
+public class SPARQLMiner extends ModelMiner {
 
-    public NullFilter(ModelFilter next_filter) {
-        super(next_filter);
+    private final Query query;
+
+    public SPARQLMiner(String query, ModelMiner next_miner) {
+        super(next_miner);
+        this.query = QueryFactory.create(query);
     }
     
     @Override
-    protected Model filter(Model model) {
-        return model;
+    protected Model mine(Model model) {
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        Model mined = qexec.execConstruct();
+        
+        return mined;
     }
     
 }

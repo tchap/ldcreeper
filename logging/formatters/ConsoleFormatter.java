@@ -26,9 +26,11 @@ import java.util.logging.LogRecord;
  */
 public class ConsoleFormatter extends Formatter {
 
+    private static final String output_format = "[ %7s ] %s\n";
+    
+    
     @Override
     public String format(LogRecord record) {
-        String output_format = "[ %7s ] %s\n";
         String message = record.getMessage();
         
         if (record.getThrown() != null) {

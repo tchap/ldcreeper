@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package ldcreeper.model.extract;
+package ldcreeper.model.mine;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import java.io.BufferedReader;
@@ -25,26 +25,23 @@ import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import ldcreeper.scheduling.URIServer;
 
 /**
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public abstract class URIExtractor {
+public abstract class ModelMiner {
     
-    private final URIExtractor next_extractor;
+    private final ModelMiner next_miner;
 
-    public URIExtractor(URIExtractor next_extractor) {
-        this.next_extractor = next_extractor;
+    public ModelMiner(ModelMiner next_miner) {
+        this.next_miner = next_miner;
     }
     
-    public static URIExtractor getURIExtractor(List<String> paths, 
-            URIServer server) {
-        
+    public static ModelMiner getModelMiner(List<String> paths) {
         final Logger log = Logger.getLogger("ldcreeper");
         
-        URIExtractor extractor = null;
+        ModelMiner mine = null;
         
         for (String path : paths) {
             File extractor_file = new File(path);
@@ -61,39 +58,42 @@ public abstract class URIExtractor {
                     sparql += line;
                 }
                 
-                extractor = new SPARQLExtractor(server, sparql, extractor);
+                mine = new SPARQLMiner(sparql, mine);
             } catch (IOException ex) {
-                log.warning("I/O exception occures, skipping SPARQL query");
+                log.warning("Skipping SPARQL query ");
                 
                 if (!extractor_file.exists()) {
-                    log.log(Level.WARNING, "\t(file %s does not exist)", path);
+                    log.log(Level.WARNING, "(file %s does not exist)", path);
                 }
                 else if (!extractor_file.canRead()) {
-                    log.log(Level.WARNING, "\t(file %s not readable)", path);
+                    log.log(Level.WARNING, "(file %s not readable)", path);
                 }
                 else {
-                    log.log(Level.WARNING, "\t(%s)", ex.getMessage());
+                    log.log(Level.WARNING, "(%s)", ex.getMessage());
                 }
             }            
         }
         
-        if (extractor == null) {
-            log.warning("No SPARQL URI Extractor created, " + 
-                    "using default (extract all URIs)");
-            return new EveryURIExtractor(server, null);
+        if (mine == null) {
+            log.warning("No ModelMiner found, " + 
+                    "using default (mine everything)");
+            return new SimpleMiner(null);
         }
         
-        return extractor;
+        return mine;
     }
     
-    public void extractFromModel(Model model) {
-        extractFrom(model);
+    public Model mineModel(Model model) {
+        Model mined = mine(model);
         
-        if (next_extractor != null) {
-            next_extractor.extractFromModel(model);
+        if (next_miner != null) {
+            return mined.add(next_miner.mineModel(model));
+        }
+        else {
+            return mined;
         }
     }
     
-    abstract protected void extractFrom(Model model);
-      
+    abstract protected Model mine(Model model);
+    
 }
