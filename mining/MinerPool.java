@@ -47,7 +47,9 @@ public class MinerPool {
         }
     }
     
-    public void start() {      
+    public void start() {
+        log.info("Starting miner threads");
+        
         for (Miner miner : miners) {
             miner.start();
         }

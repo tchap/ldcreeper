@@ -157,7 +157,6 @@ public class PostgresScheduler extends URIServer {
     }
 
     private void create_table() {
-        
         final String create_table_sql = 
                 "CREATE TABLE scheduling ( " +
                 "   uri VARCHAR(128) PRIMARY KEY, " +
@@ -170,19 +169,28 @@ public class PostgresScheduler extends URIServer {
                 "WHERE state = 2 ;";
         
         
+        log.info("Creating table for PostgresScheduler");
+        
         try {
-            execUpdate(create_table_sql);    
+            execUpdate(create_table_sql);
         } catch (SQLException ex) {
             if (!ex.getSQLState().equals(DUPLICATE_TABLE)) {
                 log.log(Level.SEVERE, "SQL exception", ex);
+                log.severe("Creating table failed");
                 System.exit(1);
             }
+            
+            log.info("Table exists");
         }
+        
+        
+        log.info("Cleaning up the table");
         
         try {
             execUpdate(clean_table_sql);
         } catch (SQLException ex) {
             log.log(Level.SEVERE, "SQL exception", ex);
+            log.severe("Table cleanup failed");
             System.exit(1);
         }
         

@@ -137,6 +137,8 @@ public class LDCreeper {
         
         initLogging();
         
+       
+        log.info("Initializing pipeline");
         
         ModelBuilder builder = ModelBuilder.getModelBuilder(); 
           
@@ -154,7 +156,9 @@ public class LDCreeper {
         
         MinerPool miners = new MinerPool(server, pipeline, thread_count);
         
-       
+        log.info("Pipeline initialized");
+        
+        
         server.querySindiceForLinks(q_query, nq_query, fq_queries, page_count);
         
         

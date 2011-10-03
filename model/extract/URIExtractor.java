@@ -83,6 +83,8 @@ public abstract class URIExtractor {
             return new EveryURIExtractor(server, null);
         }
         
+        log.info("URIExtractor created");
+        
         return extractor;
     }
     

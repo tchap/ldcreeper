@@ -160,6 +160,8 @@ public class TDBScheduler extends URIServer {
     }
     
     private void cleanup() {
+        log.info("Starting TDB cleanup");
+        
         acquireWriteLock();
         
         ResIterator iter = sched_model.listResourcesWithProperty(status, processing);
@@ -179,6 +181,8 @@ public class TDBScheduler extends URIServer {
         sched_model.commit();
         
         releaseWriteLock();
+        
+        log.info("TDB cleanup finished");
     }
     
     private void acquireReadLock() {

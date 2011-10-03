@@ -40,6 +40,7 @@ public abstract class URIServer {
             String tdb_path) {
        
         final Logger log = Logger.getLogger("ldcreeper");
+        URIServer server;
         
         if (db_args == null) {
             log.warning("No database specified for URI Server, " + 
@@ -48,12 +49,12 @@ public abstract class URIServer {
             if (tdb_path != null) {
                 log.warning("TDB directory specified for URI Server, " + 
                         "that can cause performace problems");
-                return new TDBScheduler(tdb_path);
+                server = new TDBScheduler(tdb_path);
             }
             
             log.warning("No TDB directory specified for URI Server, " +
                     "using in-memory implementation");
-            return new SimpleScheduler();
+            server = new SimpleScheduler();
         }
         else {
             PGPoolingDataSource ds = new PGPoolingDataSource();
@@ -67,8 +68,12 @@ public abstract class URIServer {
             
             ds.setPassword(passwd);
             
-            return new PostgresScheduler(ds);
+            server = new PostgresScheduler(ds);
         }
+        
+        log.info("URIServer created");
+        
+        return server;
     }
     
     public void querySindiceForLinks(SindiceQQuery q_query, SindiceNQQuery nq_query,

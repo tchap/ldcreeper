@@ -33,6 +33,9 @@ public class SPARQLMiner extends ModelMiner {
 
     public SPARQLMiner(String query, ModelMiner next_miner) {
         super(next_miner);
+        /*
+         * TODO: What if query not correct
+         */
         this.query = QueryFactory.create(query);
     }
     

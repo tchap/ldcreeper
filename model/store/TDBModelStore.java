@@ -34,6 +34,9 @@ public class TDBModelStore extends ModelStore {
     
     public TDBModelStore(String directory) {
         String dir = directory + "main";
+        /*
+         * TODO: What is dir not correct
+         */
         dataset = TDBFactory.createDataset(dir);
     }
     

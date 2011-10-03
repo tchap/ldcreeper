@@ -30,15 +30,20 @@ public abstract class ModelStore {
     
     public static ModelStore getModelStore(String tdb_path) {
         final Logger log = Logger.getLogger("ldcreeper");
+        ModelStore store;
         
         if (tdb_path == null) {
             log.warning("No TDB directory " + 
                     "specified for Model Store, using stdout...");
-            return new SimpleModelStore();
+            store = new SimpleModelStore();
         }
         else {
-            return new TDBModelStore(tdb_path);
+            store = new TDBModelStore(tdb_path);
         }
+        
+        log.info("ModelStore created");
+        
+        return store;
     }
     
     public abstract void storeNamedGraph(Graph graph, String name);

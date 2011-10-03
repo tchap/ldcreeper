@@ -19,6 +19,7 @@ package ldcreeper.model.build;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import java.net.URI;
+import java.util.logging.Logger;
 
 /**
  *
@@ -27,6 +28,10 @@ import java.net.URI;
 public abstract class ModelBuilder {
        
     public static ModelBuilder getModelBuilder() {
+        ModelBuilder builder = new ContentTypeModelBuilder();
+        
+        Logger.getLogger("ldcreeper").info("ModelBuilder created");
+        
         return new ContentTypeModelBuilder();
     }
     

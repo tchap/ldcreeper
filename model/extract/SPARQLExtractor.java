@@ -42,6 +42,9 @@ public class SPARQLExtractor extends URIExtractor {
     public SPARQLExtractor(URIServer server, String query, URIExtractor extractor) {
         super(extractor);
         this.server = server;
+        /*
+         * TODO: What if query not correct?
+         */
         this.query = QueryFactory.create(query);
     }
 
