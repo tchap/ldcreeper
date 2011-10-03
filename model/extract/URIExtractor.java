@@ -80,7 +80,7 @@ public abstract class URIExtractor {
         if (extractor == null) {
             log.warning("No SPARQL URI Extractor created, " + 
                     "using default (extract all URIs)");
-            return new EveryURIExtractor(server, null);
+            extractor = new EveryURIExtractor(server, null);
         }
         
         log.info("URIExtractor created");

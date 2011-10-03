@@ -115,7 +115,7 @@ public class LDCreeper {
             "-q",           "Tim Berners-Lee foaf",
             "-nq",          "* <rdf:type> <foaf:Person>",
             "-p",           "3",
-            //"-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB",
+            "-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB/",
             //"-p",           "ldcreeper:ldcreeper_db",
             "-s",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/select.sparql",
             "-c",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/construct.sparql",

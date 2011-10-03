@@ -41,7 +41,7 @@ public abstract class ModelMiner {
     public static ModelMiner getModelMiner(List<String> paths) {
         final Logger log = Logger.getLogger("ldcreeper");
         
-        ModelMiner mine = null;
+        ModelMiner miner = null;
         
         for (String path : paths) {
             File extractor_file = new File(path);
@@ -58,7 +58,7 @@ public abstract class ModelMiner {
                     sparql += line;
                 }
                 
-                mine = new SPARQLMiner(sparql, mine);
+                miner = new SPARQLMiner(sparql, miner);
             } catch (IOException ex) {
                 log.warning("Skipping SPARQL query ");
                 
@@ -74,13 +74,15 @@ public abstract class ModelMiner {
             }            
         }
         
-        if (mine == null) {
+        if (miner == null) {
             log.warning("No ModelMiner found, " + 
                     "using default (mine everything)");
-            return new SimpleMiner(null);
+            miner =  new SimpleMiner(null);
         }
         
-        return mine;
+        log.info("ModelMiner created");
+        
+        return miner;
     }
     
     public Model mineModel(Model model) {

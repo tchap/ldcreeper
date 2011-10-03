@@ -43,18 +43,21 @@ public abstract class URIServer {
         URIServer server;
         
         if (db_args == null) {
-            log.warning("No database specified for URI Server, " + 
+            log.warning("No database specified for URIServer, " + 
                     "trying other solutions");
             
             if (tdb_path != null) {
-                log.warning("TDB directory specified for URI Server, " + 
-                        "that can cause performace problems");
+                log.warning("TDB directory specified for URIServer, " + 
+                        "falling back to TDBScheduler");
+                log.warning("\t(that can cause performace problems)");
                 server = new TDBScheduler(tdb_path);
             }
-            
-            log.warning("No TDB directory specified for URI Server, " +
-                    "using in-memory implementation");
-            server = new SimpleScheduler();
+            else {
+
+                log.warning("No TDB directory specified for URIServer, " +
+                        "using in-memory implementation");
+                server = new SimpleScheduler();
+            }
         }
         else {
             PGPoolingDataSource ds = new PGPoolingDataSource();

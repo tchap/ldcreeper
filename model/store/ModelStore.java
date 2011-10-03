@@ -30,11 +30,12 @@ public abstract class ModelStore {
     
     public static ModelStore getModelStore(String tdb_path) {
         final Logger log = Logger.getLogger("ldcreeper");
+        
         ModelStore store;
         
         if (tdb_path == null) {
             log.warning("No TDB directory " + 
-                    "specified for Model Store, using stdout...");
+                    "specified for ModelStore, using stdout...");
             store = new SimpleModelStore();
         }
         else {
