@@ -216,21 +216,21 @@ public class ArgParser {
             return desc + "\n";
         }
         
-        StringBuilder desc_builder = new StringBuilder();
-        int line_width = 0;
+        String[] words = desc.split("\\s");
+        StringBuilder desc_builder = new StringBuilder(words[0]);
+        int line_width = words[0].length();
         
-        for (String word: desc.split("\\s")) {
-            if (line_width + 1 + word.length() < width) {
-                desc_builder.append(word);
+        for (int i = 1; i < words.length; ++i) {
+            if (line_width + 1 + words[i].length() < width) {
                 desc_builder.append(" ");
-                line_width += word.length();
+                desc_builder.append(words[i]);
+                line_width += words[i].length() + 1;
             }
             else {
                 desc_builder.append("\n\t");
                 desc_builder.append(line_prefix);
-                desc_builder.append(word);
-                desc_builder.append(" ");
-                line_width = word.length();
+                desc_builder.append(words[i]);
+                line_width = words[i].length();
             }
         }
         
