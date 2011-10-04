@@ -18,6 +18,7 @@
 package ldcreeper.model.extract;
 
 import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
@@ -58,7 +59,7 @@ public class EveryURIExtractor extends URIExtractor {
             }
             
             
-            Resource obj = stmt.getObject().asResource();
+            RDFNode obj = stmt.getObject();
             
             if (obj.isURIResource()) {
                 try {

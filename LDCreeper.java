@@ -91,12 +91,12 @@ public class LDCreeper {
                     "can be skipped if localhost:5432.")
     private static DBConnectionArgs db_args = null;
     
-    @Parameter(names={"-s", "-select-query"}, 
+    @Parameter(names={"-e", "-extractor-query"}, 
                description="Path to a file containing SPARQL SELECT query " +
                     "to be used for getting new links from models fetched")
     private static List<String> extractor_files = new ArrayList<String>();
     
-    @Parameter(names={"-c", "-construct-query"},
+    @Parameter(names={"-m", "-miner-query"},
                description="Path to a file containing SPARQL CONSTRUCT query " +
                     "to be used for building models being saved")
     private static List<String> miner_files = new ArrayList<String>();
@@ -108,25 +108,11 @@ public class LDCreeper {
      */
     public static void main(String[] args) {
         
-        String[] argz = {
-            //"-h",
-            "-v",
-            "-t",           "5",
-            "-q",           "Tim Berners-Lee foaf",
-            "-nq",          "* <rdf:type> <foaf:Person>",
-            "-p",           "3",
-            "-tdb",         "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/TDB/",
-            //"-p",           "ldcreeper:ldcreeper_db",
-            "-s",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/select.sparql",
-            "-c",           "/home/tchap/Matfyz/Rocnikovy_projekt/ldcreeper_runtime/SPARQL/construct.sparql",
-            //"-l",           "/"
-        };
-        
         ArgParser arg_parser = new ArgParser();
         
         try {
             arg_parser.addParametersFrom(LDCreeper.class);
-            arg_parser.parse(argz);
+            arg_parser.parse(args);
         }
         catch (ArgParseException ex) {
             Logger.getLogger(LDCreeper.class.getName()).log(Level.SEVERE, 
@@ -164,7 +150,6 @@ public class LDCreeper {
         
         miners.start();
         miners.join();
-    
     }
     
     private static void initLogging() {

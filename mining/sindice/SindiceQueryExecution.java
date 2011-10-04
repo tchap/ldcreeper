@@ -109,7 +109,7 @@ public class SindiceQueryExecution {
             
             links.addAll(sax_handler.getResultLinks());
             
-            log.info(String.format("\tSearch results processed [page %d/%d]", 
+            log.info(String.format("\tSearch results processed [page %2d/%2d]", 
                     counter, page_count));
             
             next_page = sax_handler.getNextPage();

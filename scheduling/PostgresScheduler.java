@@ -159,7 +159,7 @@ public class PostgresScheduler extends URIServer {
     private void create_table() {
         final String create_table_sql = 
                 "CREATE TABLE scheduling ( " +
-                "   uri VARCHAR(128) PRIMARY KEY, " +
+                "   uri VARCHAR(256) PRIMARY KEY, " +
                 "   state INT " +
                 ");";
         

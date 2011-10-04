@@ -72,7 +72,14 @@ public class ContentTypeModelBuilder extends ModelBuilder {
             return null;
         }
         
-        String mime = conn.getContentType().split(";")[0];
+        
+        String content_type = conn.getContentType();
+        
+        if (content_type == null) {
+            return null;
+        }
+        
+        String mime = content_type.split(";")[0];
         String lang = ct_map.get(mime);
         
         if (lang == null) {
@@ -85,7 +92,7 @@ public class ContentTypeModelBuilder extends ModelBuilder {
         try {
             model.read(conn.getInputStream(), uri.toString(), lang);
         } catch (IOException ex) {
-            Logger.getLogger("ldcreeper").log(Level.WARNING, 
+            log.log(Level.WARNING, 
                     "I/O exception", ex);
             return null;
         }
