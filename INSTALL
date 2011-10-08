@@ -1,0 +1,14 @@
+LDCreeper
+---------
+
+  Requirements (compile) 
+  ----------------------
+  - JDK 1.6 or newer
+  - TDB (0.8.10)
+  - PostgreSQL JDBC4 driver
+  
+  Requirements (run)
+  ------------------
+  - JVM 1.6 or newer
+  - (optional but strongly recommended) PostgreSQL 7.2 or newer
+ 

@@ -1,0 +1,82 @@
+LDCreeper
+---------
+LDCreeper is an easily extensible Linked Data crawler,
+built on top of Jena framework.
+
+Source code available at: https://github.com/tchap/ldcrawler
+
+Contact: ondra DOT cap AT gmail DOT com
+
+This file contains a detailed explanation of how LDCreeper works. 
+For license of this program and libraries coming with it,
+see the licenses directory.
+
+  LDCreepew crawling
+  ------------------
+
+    URI pool - URIServer
+    --------------------
+    Central part of LDCrawler is an URI pool, holding all the URIs found,
+    returning one at the time if requested by crawling threads.
+    URI pool is made persistent, if you define connection to PostgreSQL
+    database or TDB directory, that is. Otherwise just simple in-memory
+    URI pool is used. Defining PostgreSQL connection over TDB directory
+    is strongly recommended and has priority on the command line.
+
+    Pipeline
+    --------
+    LDCreeper is in fact a thread pool, each thread executing an instance
+    of Pipeline for every URI received from the URI pool.
+    This Pipeline has 4 phrases, implemented by 4 distinct objects passed
+    to the constructor at the beginning of crawling. This allows for Pipeline
+    to be assembled according to the command line arguments and to be easily
+    extended. The only requrement is to implement particular interface.
+
+      Phrase 1: ModelBuilder
+      ----------------------
+      ModelBuilder gets an URI and is supposed to create Jena Model out of it
+      or return null if it cannot be accomplished. Currently this is done
+      purely by using Jena mechanisms. No embedded formats are thus supported.
+
+      Phrase 2: URIExtractor
+      ----------------------
+      New URIs are extracted from the Model and inserted into the URI pool.
+      Multiple SPARQL SELECT queries can be inserted through CL arguments.
+      They will be executed on the model and result URIs will be inserted
+      into the URI pool. If no query is inserted, all URIs in the model
+      are inserted into the URI pool. Examples of possible SPAQL queries
+      can be found in the examples directory.
+
+      Phrase 3: ModelMiner
+      --------------------
+      During this phrase there is chance to filter away triples you do not want
+      to appear in the model being stored. Multiple SPARQL CONSTRUCT queries
+      can be inserted and their union will be stored in the next phrase.
+      If no query is inserted, the model is passed on as it is.
+      Examples of possible SPARQL queries can be found in the examples
+      directory.
+
+      Phrase 4: ModelStore
+      --------------------
+      All models reaching this phrase will be stored in a TDB directory
+      defined on the command line. Just a short message is printed to the stdout
+      if no TDB directory is specified.
+
+    Initialize URI pool
+    -------------------
+    At the beginning the URI pool is initialized with single URIs passed as
+    command line arguments and/or by defining Sindice query, also through
+    CL arguments. All URIs collected are inserted into the URI pool before
+    the thread pool of crawlers is started.
+
+    Miner pool
+    ----------------
+    When initial URIs are collected, all the miner threads are started,
+    each executing an instance of Pipeline for every URI received
+    from the URI pool until the pool is empty.
+
+  Joseki integration
+  ------------------
+  Since LDCreeper is storing data in TDB directory, it is easy to integrate
+  him with Joseki SPARQL endpoint and in general anything accepting
+  Jena assembler to define datasets.
