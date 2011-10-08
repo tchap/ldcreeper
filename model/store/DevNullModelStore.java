@@ -19,22 +19,26 @@ package ldcreeper.model.store;
 
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Ondrej Kupka <ondra DOT cap AT gmail DOT com>
  */
-public class SimpleModelStore extends ModelStore {
+public class DevNullModelStore extends ModelStore {
 
+    private static final Logger log = Logger.getLogger("ldcreeper");
+    
+    
     @Override
     public void storeNamedGraph(Graph graph, String name) {
-        ModelFactory.createModelForGraph(graph).write(System.out, "N-TRIPLE");
+        log.log(Level.WARNING, "[DUMP GRAPH %s]", name);
     }
 
     @Override
     public void storeNamedModel(Model model, String name) {
-        model.write(System.out, "N-TRIPLE");
+        log.log(Level.WARNING, "[DUMP MODEL %s]", name);
     }
     
 }

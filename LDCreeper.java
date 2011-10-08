@@ -18,6 +18,8 @@
 package ldcreeper;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
@@ -61,6 +63,9 @@ public class LDCreeper {
     @Parameter(names={"-t", "-threads"}, 
                description="Number of threads to start")
     private static Integer thread_count = 4;
+    
+    @Parameter(names={"-u", "-uri"}, description="Insert uri to initial URI set")
+    private static List<String> uris = new ArrayList<String>();
     
     @Parameter(names="-q", description="Add sindice keyword search query " +
             "to get initial URI set")
@@ -145,6 +150,18 @@ public class LDCreeper {
         log.info("Pipeline initialized");
         
         
+        for (String u : uris) {
+            log.log(Level.INFO, "Inserting %s into the URIServer", u);
+            
+            URI uri;
+            
+            try {
+                uri = new URI(u);
+            } catch (URISyntaxException ex) {
+                log.log(Level.WARNING, "URI syntax exception, skipping %s", u);
+            }
+        }
+        
         server.querySindiceForLinks(q_query, nq_query, fq_queries, page_count);
         
         
@@ -178,6 +195,7 @@ public class LDCreeper {
             
             try {
                 file_handler = new FileHandler(log_pattern, 1000, 5);
+                file_handler.setFormatter(new ConsoleFormatter());
             } catch (IOException ex) {
                 log.log(Level.SEVERE, "I/O exception", ex);
                 return;

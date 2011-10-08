@@ -35,8 +35,8 @@ public abstract class ModelStore {
         
         if (tdb_path == null) {
             log.warning("No TDB directory " + 
-                    "specified for ModelStore, using stdout...");
-            store = new SimpleModelStore();
+                    "specified for ModelStore, ALL DATA WILL BE DUMPED");
+            store = new DevNullModelStore();
         }
         else {
             store = new TDBModelStore(tdb_path);
